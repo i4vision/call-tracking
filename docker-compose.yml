@@ -8,7 +8,18 @@ services:
     ports:
       - "19432:8080"
     volumes:
-      # Map the Windows host directory to the internal container directory
-      - /c/OpenPhoneArchive:/archive:ro
+      # Use a Docker named volume that connects to the Windows share
+      - archive_data:/archive:ro
+    environment:
+      - ARCHIVE_PATH=/archive
     env_file:
       - backend/.env
+
+volumes:
+  archive_data:
+    driver_opts:
+      type: cifs
+      # Replace <YOUR_WINDOWS_IP> with the actual IP address of your Windows PC
+      # If your share requires a password, change username/password here.
+      o: "username=guest,password="
+      device: "//<YOUR_WINDOWS_IP>/OpenPhoneArchive"
