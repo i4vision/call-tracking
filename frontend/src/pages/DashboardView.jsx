@@ -76,6 +76,7 @@ export default function DashboardView() {
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Filename</th>
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Model</th>
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Emotion</th>
+                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Cost</th>
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Date</th>
                     </tr>
                   </thead>
@@ -83,8 +84,9 @@ export default function DashboardView() {
                     {recent.map(call => (
                       <tr key={call.id} style={{borderBottom: '1px solid var(--border-color)'}}>
                         <td style={{padding: '15px 20px'}}>{call.filename}</td>
-                        <td style={{padding: '15px 20px'}}><span className="badge badge-ai">{call.ai_version}</span></td>
+                        <td style={{padding: '15px 20px'}}><span className="badge badge-ai" style={{background: 'rgba(255,255,255,0.05)', color: '#8b949e', border: '1px solid #30363d'}}>{call.ai_version.replace(' | ', ' ⚙️ ')}</span></td>
                         <td style={{padding: '15px 20px'}}><span className={`badge badge-${call.emotion}`}>{call.emotion}</span></td>
+                        <td style={{padding: '15px 20px', color: 'var(--success-color)'}}>${Number(call.cost || 0).toFixed(4)}</td>
                         <td style={{padding: '15px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>{new Date(call.created_at).toLocaleString()}</td>
                       </tr>
                     ))}
