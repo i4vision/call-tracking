@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Mic, Layers, Clock, Activity, FileText } from 'lucide-react';
+import { X, Mic, Layers, Clock, Activity, FileText, Timer } from 'lucide-react';
 import { API_URL } from '../App';
 
 export default function FileHistoryModal({ filename, onClose }) {
@@ -51,8 +51,12 @@ export default function FileHistoryModal({ filename, onClose }) {
                     <div style={{color: 'var(--accent-color)', fontWeight: 600, fontSize: '0.8rem', fontFamily: 'monospace'}}>{call.ai_version.replace(' | ', ' ⚙️ ')}</div>
                   </div>
                   <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
-                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Clock size={12}/> Time & Cost</div>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Clock size={12}/> AI & Cost</div>
                     <div style={{color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem'}}>{Number(call.processing_time).toFixed(1)}s • <span style={{color: 'var(--success-color)'}}>${Number(call.cost).toFixed(4)}</span></div>
+                  </div>
+                  <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Timer size={12}/> Audio Len</div>
+                    <div style={{color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem'}}>{call.audio_duration ? `${Math.floor(Number(call.audio_duration) / 60)}m ${Math.round(Number(call.audio_duration) % 60)}s` : 'Unknown'}</div>
                   </div>
                 </div>
 
