@@ -37,6 +37,37 @@ app.get('/api/files', (req, res) => {
     res.status(500).json({ error: 'Failed to read archive folder', files: [] });
   }
 });
+// GET /api/credentials
+app.get('/api/credentials', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('ai_credentials').select('provider, updated_at');
+    if (error) throw error;
+    // Don't send exact keys to frontend, just state they exist
+    res.json({ credentials: data || [] });
+  } catch (error) {
+    console.error('Error fetching credentials:', error);
+    res.status(500).json({ error: 'Failed to fetch credentials' });
+  }
+});
+
+// POST /api/credentials
+app.post('/api/credentials', async (req, res) => {
+  const { provider, api_key } = req.body;
+  if (!provider || !api_key) return res.status(400).json({ error: 'Missing provider or api_key' });
+  
+  try {
+    const { data, error } = await supabase
+      .from('ai_credentials')
+      .upsert([{ provider, api_key, updated_at: new Date().toISOString() }], { onConflict: 'provider' });
+    
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error saving credentials:', error);
+    res.status(500).json({ error: 'Failed to save credentials' });
+  }
+});
+
 
 // Mock transcription service
 const generateMockTranscript = (filename, model) => {
@@ -55,24 +86,35 @@ const determineEmotion = (transcript) => {
 
 // POST /api/transcribe
 app.post('/api/transcribe', async (req, res) => {
-  const { files, model } = req.body;
+  const { files, provider, version } = req.body;
   if (!files || !Array.isArray(files) || files.length === 0) {
     return res.status(400).json({ error: 'No files provided for transcription' });
   }
   
-  if (!model) {
-    return res.status(400).json({ error: 'No AI model specified' });
+  if (!provider || !version) {
+    return res.status(400).json({ error: 'No AI provider or version specified' });
+  }
+
+  // 1. Check if we have credentials for this provider
+  const { data: credData, error: credError } = await supabase
+    .from('ai_credentials')
+    .select('api_key')
+    .eq('provider', provider)
+    .single();
+
+  if (credError || !credData) {
+    return res.status(403).json({ error: `Missing API Key for provider: ${provider}. Please configure it in settings.` });
   }
 
   const results = [];
 
   for (const file of files) {
     try {
-      // 1. In a real app we'd read the mp3 and send it to OpenAI Whisper
+      // 2. In a real app, we'd use credData.api_key here
       // const fileBuffer = fs.readFileSync(path.join(ARCHIVE_PATH, file));
-      // const transcriptText = await callRealAI(fileBuffer, model);
+      // const transcriptText = await callRealAI(fileBuffer, provider, version, credData.api_key);
       
-      const transcriptText = generateMockTranscript(file, model);
+      const transcriptText = generateMockTranscript(file, `${provider} ${version}`);
       const emotion = determineEmotion(transcriptText);
 
       // 2. Save result to Supabase

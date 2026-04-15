@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { Mic, BarChart2, Headphones, FileAudio } from 'lucide-react';
+import { Mic, BarChart2, Headphones, FileAudio, Settings } from 'lucide-react';
 import TranscriptionView from './pages/TranscriptionView';
 import DashboardView from './pages/DashboardView';
+import SettingsModal from './components/SettingsModal';
 import './index.css';
 
 // Central API URL
@@ -13,6 +14,7 @@ function App() {
   const [files, setFiles] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/files`)
@@ -57,6 +59,13 @@ function App() {
               >
                 <BarChart2 size={16} style={{marginRight: 4}}/> Dashboard
               </NavLink>
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="nav-link"
+                style={{background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center'}}
+              >
+                <Settings size={16} style={{marginRight: 4}}/> API Keys
+              </button>
             </div>
           </div>
           
@@ -94,6 +103,8 @@ function App() {
             <Route path="/dashboard" element={<DashboardView />} />
           </Routes>
         </main>
+        
+        {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
       </div>
     </Router>
   );
