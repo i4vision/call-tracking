@@ -21,5 +21,5 @@ volumes:
       type: cifs
       # Replace <YOUR_WINDOWS_IP> with the actual IP address of your Windows PC
       # If your share requires a password, change username/password here.
-      o: "username=guest,password="
+      o: "username=ia_agustin,password=Bustillo50052404!ia"
       device: "//10.115.14.9/OpenPhoneArchive"
