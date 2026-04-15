@@ -279,7 +279,10 @@ app.get('/api/dashboard', async (req, res) => {
     const { data: calls, error: fetchErr } = await supabase.from('calls').select('*').order('created_at', { ascending: false });
     if (fetchErr) throw fetchErr;
 
-    const stats = {};
+    const stats = {
+      delighted: 0, satisfied: 0, neutral: 0, confused: 0,
+      frustrated: 0, angry: 0, urgent: 0
+    };
     calls.forEach(call => {
       const em = call.emotion || 'neutral';
       stats[em] = (stats[em] || 0) + 1;
