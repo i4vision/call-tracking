@@ -141,17 +141,17 @@ export default function TranscriptionView({ selectedFiles }) {
       <div className="results-grid">
         {results.map((res, index) => (
           <div key={index} className="result-card">
-            <div className="result-header">
-              <span className="result-title" title={res.file}>{res.file.substring(0, 25)}{res.file.length > 25 ? '...' : ''}</span>
+            <div className="result-header" style={{flexDirection: 'column', gap: 10, alignItems: 'flex-start'}}>
+              <span className="result-title" title={res.file} style={{wordBreak: 'break-all'}}>{res.file}</span>
               {res.success ? (
-                <div style={{display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end'}}>
-                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap'}}>
+                <div style={{display: 'flex', gap: 15, alignItems: 'center', flexWrap: 'wrap'}}>
+                   <span className={`badge`} style={{border: '1px solid rgba(255,255,255,0.2)', whiteSpace: 'nowrap'}}>{res.data.emotion.toUpperCase()}</span>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
                      Cost: <span style={{color: 'var(--success-color)', fontWeight: 600}}>${Number(res.data.cost).toFixed(4)}</span>
                    </span>
-                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap'}}>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
                      Time: <span style={{color: 'var(--text-primary)', fontWeight: 600}}>{Number(res.data.processing_time || 0).toFixed(1)}s</span>
                    </span>
-                   <span className={`badge`} style={{border: '1px solid rgba(255,255,255,0.2)', whiteSpace: 'nowrap'}}>{res.data.emotion.toUpperCase()}</span>
                 </div>
               ) : (
                 <span className="badge badge-bad">Failed</span>
