@@ -248,9 +248,6 @@ app.post('/api/transcribe', async (req, res) => {
       const endTime = Date.now();
       const timeTakenSecs = (endTime - startTime) / 1000;
 
-      // 5. DEDUPLICATION: Delete existing rows for this file
-      await supabase.from('calls').delete().eq('filename', file);
-
       // 6. Store to database securely
       const { data, error } = await supabase
         .from('calls')
@@ -297,7 +294,19 @@ app.get('/api/dashboard', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
-    res.status(500).json({ error: 'Failed to fetch dashboard stats' });
+    res.status(500).json({ error: 'Failed to generate metrics' });
+  }
+});
+
+// GET /api/calls/:filename - Fetch strict history array for a single recording
+app.get('/api/calls/:filename', async (req, res) => {
+  try {
+    const { data: calls, error } = await supabase.from('calls').select('*').eq('filename', req.params.filename).order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(calls || []);
+  } catch (error) {
+    console.error('Error fetching file history:', error);
+    res.status(500).json({ error: 'Failed to access database' });
   }
 });
 

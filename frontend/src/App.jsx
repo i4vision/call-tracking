@@ -4,6 +4,7 @@ import { Mic, BarChart2, Headphones, FileAudio, Settings } from 'lucide-react';
 import TranscriptionView from './pages/TranscriptionView';
 import DashboardView from './pages/DashboardView';
 import SettingsModal from './components/SettingsModal';
+import FileHistoryModal from './components/FileHistoryModal';
 import './index.css';
 
 // Central API URL
@@ -15,6 +16,7 @@ function App() {
   const [selectedFileIds, setSelectedFileIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [viewingHistoryFile, setViewingHistoryFile] = useState(null);
 
   useEffect(() => {
     fetch(`${API_URL}/files`)
@@ -82,12 +84,13 @@ function App() {
                 <div 
                   key={file.id} 
                   className="file-item"
-                  onClick={() => toggleFile(file.id)}
+                  onClick={() => setViewingHistoryFile(file.filename)}
                 >
                   <input 
                     type="checkbox" 
                     checked={selectedFileIds.has(file.id)}
-                    onChange={() => {}} // handled by parent onClick
+                    onChange={() => toggleFile(file.id)}
+                    onClick={(e) => e.stopPropagation()}
                   />
                   <FileAudio size={18} className="file-icon" />
                   <span className="file-name" title={file.filename}>{file.filename}</span>
@@ -105,6 +108,7 @@ function App() {
         </main>
         
         {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+        {viewingHistoryFile && <FileHistoryModal filename={viewingHistoryFile} onClose={() => setViewingHistoryFile(null)} />}
       </div>
     </Router>
   );
