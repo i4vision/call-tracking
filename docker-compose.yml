@@ -9,14 +9,14 @@ services:
       - "19432:8080"
     volumes:
       # Use a Docker named volume that connects to the Windows share
-      - archive_data:/archive:ro
+      - archive_data_v2:/archive:ro
     environment:
       - ARCHIVE_PATH=/archive
     env_file:
       - backend/.env
 
 volumes:
-  archive_data:
+  archive_data_v2:
     driver_opts:
       type: cifs
       # Replace <YOUR_WINDOWS_IP> with the actual IP address of your Windows PC
