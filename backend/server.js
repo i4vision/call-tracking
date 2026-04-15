@@ -81,15 +81,23 @@ const getAudioDuration = async (filePath) => {
   }
 };
 
-const transcribeWithWhisper = async (filePath, openaiKey) => {
+const transcribeWithWhisper = async (filePath, key, provider) => {
   const formData = new FormData();
   formData.append('file', fs.createReadStream(filePath));
-  formData.append('model', 'whisper-1');
 
-  const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
+  let url;
+  if (provider === 'groq') {
+    formData.append('model', 'whisper-large-v3'); // Groq's whisper
+    url = 'https://api.groq.com/openai/v1/audio/transcriptions';
+  } else {
+    formData.append('model', 'whisper-1'); // OpenAI's whisper
+    url = 'https://api.openai.com/v1/audio/transcriptions';
+  }
+
+  const response = await axios.post(url, formData, {
     headers: {
       ...formData.getHeaders(),
-      Authorization: `Bearer ${openaiKey}`
+      Authorization: `Bearer ${key}`
     }
   });
   return response.data;
@@ -163,7 +171,7 @@ const analyzeEmotionGoogle = async (transcript, model, apiKey) => {
 const DEFAULT_RATES = { input: 0.50 / 1000000, output: 0.50 / 1000000 };
 
 const RATES = {
-  transcribe: { 'openai': 0.006 },
+  transcribe: { 'openai': 0.006, 'groq': 0.0005 },
   analyzer: {
     'openai': { input: 5.00 / 1000000, output: 15.00 / 1000000 },
     'anthropic': { input: 3.00 / 1000000, output: 15.00 / 1000000 },
@@ -203,7 +211,7 @@ app.post('/api/transcribe', async (req, res) => {
       let totalCost = (RATES.transcribe[transcriberProvider] || 0) * minutes;
 
       // 3. Transcription Network Call
-      const transRes = await transcribeWithWhisper(filePath, transcriberKey);
+      const transRes = await transcribeWithWhisper(filePath, transcriberKey, transcriberProvider);
       const transcriptText = transRes.text;
 
       // 4. Analysis Network Call

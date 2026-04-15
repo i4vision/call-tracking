@@ -90,8 +90,8 @@ export default function TranscriptionView({ selectedFiles }) {
         <div className="select-group">
           <label>1. Transcriber AI</label>
           <select value={transcriberProvider} onChange={e => setTranscriberProvider(e.target.value)}>
-             {/* We only support OpenAI Whisper for audio extraction right now as it's the gold standard */}
             <option value="openai">OpenAI Whisper v3</option>
+            <option value="groq">Groq Whisper (Ultra-fast)</option>
           </select>
         </div>
 
