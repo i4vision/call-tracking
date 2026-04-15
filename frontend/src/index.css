@@ -377,7 +377,50 @@ select:focus, select:hover {
   position: absolute;
   top: 20px;
   right: 20px;
+  background-color: transparent;
+}
+
+/* Textarea Modernization */
+.ai-prompt-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 15px;
+  border-radius: 8px;
+  background: var(--bg-color-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  resize: vertical;
+  font-family: inherit; /* Use clean sans-serif */
+  font-size: 0.9rem;
+  line-height: 1.5;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ai-prompt-textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+}
+
+.ai-prompt-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+.ai-prompt-textarea::-webkit-scrollbar-track {
   background: transparent;
+}
+.ai-prompt-textarea::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+.ai-prompt-textarea::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: transparent;
   border: none;
   color: var(--text-secondary);
   cursor: pointer;

@@ -117,28 +117,25 @@ export default function TranscriptionView({ selectedFiles }) {
           </select>
         </div>
 
-        <div className="select-group" style={{gridColumn: '1 / -1', marginTop: 10}}>
+        <div className="select-group" style={{flexBasis: '100%', marginTop: 10}}>
           <label>Emotion Engine System Prompt</label>
           <textarea 
+            className="ai-prompt-textarea"
             value={customPrompt} 
             onChange={e => setCustomPrompt(e.target.value)}
-            style={{
-               width: '100%', minHeight: 80, padding: 15, borderRadius: 8, 
-               background: 'var(--bg-color-tertiary)', color: 'var(--text-primary)',
-               border: '1px solid var(--border-color)', resize: 'vertical',
-               fontFamily: 'monospace', fontSize: '0.85rem'
-            }}
           />
         </div>
 
-        <button 
-          className="btn-primary" 
-          onClick={handleTranscribe}
-          disabled={selectedFiles.length === 0 || transcribing}
-        >
-          {transcribing ? <Loader2 size={18} className="spinner" /> : <Zap size={18} />}
-          {transcribing ? 'Processing...' : 'Execute Pipeline'}
-        </button>
+        <div style={{flexBasis: '100%', display: 'flex', justifyContent: 'flex-end'}}>
+          <button 
+            className="btn-primary" 
+            onClick={handleTranscribe}
+            disabled={selectedFiles.length === 0 || transcribing}
+          >
+            {transcribing ? <Loader2 size={18} className="spinner" /> : <Zap size={18} />}
+            {transcribing ? 'Processing...' : 'Execute Pipeline'}
+          </button>
+        </div>
       </div>
 
       <div className="results-grid">
@@ -147,14 +144,14 @@ export default function TranscriptionView({ selectedFiles }) {
             <div className="result-header">
               <span className="result-title" title={res.file}>{res.file.substring(0, 25)}{res.file.length > 25 ? '...' : ''}</span>
               {res.success ? (
-                <div style={{display: 'flex', gap: 10, alignItems: 'center'}}>
-                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500}}>
-                     API Cost: <span style={{color: 'var(--success-color)'}}>${Number(res.data.cost).toFixed(4)}</span>
+                <div style={{display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end'}}>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap'}}>
+                     Cost: <span style={{color: 'var(--success-color)', fontWeight: 600}}>${Number(res.data.cost).toFixed(4)}</span>
                    </span>
-                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500}}>
-                     Time: <span style={{color: 'var(--text-primary)'}}>{Number(res.data.processing_time || 0).toFixed(1)}s</span>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap'}}>
+                     Time: <span style={{color: 'var(--text-primary)', fontWeight: 600}}>{Number(res.data.processing_time || 0).toFixed(1)}s</span>
                    </span>
-                   <span className={`badge`} style={{border: '1px solid rgba(255,255,255,0.2)'}}>{res.data.emotion.toUpperCase()}</span>
+                   <span className={`badge`} style={{border: '1px solid rgba(255,255,255,0.2)', whiteSpace: 'nowrap'}}>{res.data.emotion.toUpperCase()}</span>
                 </div>
               ) : (
                 <span className="badge badge-bad">Failed</span>
