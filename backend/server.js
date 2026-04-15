@@ -259,7 +259,7 @@ app.post('/api/transcribe', async (req, res) => {
           cost: totalCost,
           processing_time: timeTakenSecs,
           system_prompt: activePrompt,
-          audio_duration: durationSeconds
+          audio_duration: durationSecs
         }])
         .select();
 
