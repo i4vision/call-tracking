@@ -54,8 +54,8 @@ export default function SettingsModal({ onClose }) {
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
               <option value="google">Google Gemini</option>
-              <option value="meta">Meta Llama</option>
-              <option value="mistral">Mistral</option>
+              <option value="groq">Groq (Meta Llama 3)</option>
+              <option value="mistral">Mistral API</option>
             </select>
           </div>
 

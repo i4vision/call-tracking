@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Smile, Frown, Meh, BarChart } from 'lucide-react';
+import { Activity, Smile, Frown, Meh, AlertTriangle, Zap, CheckCircle, BarChart } from 'lucide-react';
 import { API_URL } from '../App';
 
 export default function DashboardView() {
-  const [stats, setStats] = useState({ good: 0, bad: 0, neutral: 0, total: 0 });
+  const [stats, setStats] = useState({});
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,6 +21,19 @@ export default function DashboardView() {
       });
   }, []);
 
+  // Icon and Style mapper for the generic emotions
+  const EMOTION_META = {
+    delighted: { icon: Smile, color: 'var(--success-color)' },
+    satisfied: { icon: CheckCircle, color: '#3fb950' },
+    neutral: { icon: Meh, color: 'var(--text-secondary)' },
+    confused: { icon: Zap, color: 'var(--accent-color)' },
+    frustrated: { icon: AlertTriangle, color: 'orange' },
+    angry: { icon: Frown, color: 'var(--danger-color)' },
+    urgent: { icon: AlertTriangle, color: '#ff2c00' },
+  };
+
+  const getMeta = (emotionKey) => EMOTION_META[emotionKey.toLowerCase()] || { icon: BarChart, color: 'var(--text-secondary)' };
+
   return (
     <>
       <div className="topbar">
@@ -29,7 +42,7 @@ export default function DashboardView() {
       
       <div className="content-header">
         <h1>Emotions Dashboard</h1>
-        <p>High-level overview of caller sentiment based on transcription intelligence.</p>
+        <p>Dynamic overview of caller sentiment explicitly categorized by AI analysis.</p>
       </div>
 
       {loading ? (
@@ -37,29 +50,24 @@ export default function DashboardView() {
       ) : (
         <>
           <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon good"><Smile size={32} /></div>
-              <div className="stat-info">
-                <h3>Good Calls</h3>
-                <div className="value" style={{color: 'var(--success-color)'}}>{stats.good}</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon bad"><Frown size={32} /></div>
-              <div className="stat-info">
-                <h3>Bad Calls</h3>
-                <div className="value" style={{color: 'var(--danger-color)'}}>{stats.bad}</div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon neutral"><Meh size={32} /></div>
-              <div className="stat-info">
-                <h3>Neutral Calls</h3>
-                <div className="value" style={{color: 'var(--text-secondary)'}}>{stats.neutral}</div>
-              </div>
-            </div>
+            {Object.keys(stats).length === 0 ? (
+               <div style={{color: 'var(--text-secondary)'}}>No emotions logged yet. Transcribe some calls!</div>
+            ) : null}
+            {Object.entries(stats).sort((a,b) => b[1] - a[1]).map(([emotion, count]) => {
+              const meta = getMeta(emotion);
+              const SIcon = meta.icon;
+              return (
+                <div className="stat-card" key={emotion}>
+                  <div className="stat-icon" style={{background: `${meta.color}22`, color: meta.color}}>
+                    <SIcon size={32} />
+                  </div>
+                  <div className="stat-info">
+                    <h3 style={{textTransform: 'capitalize'}}>{emotion}</h3>
+                    <div className="value" style={{color: meta.color}}>{count}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div style={{padding: '0 40px 40px'}}>
@@ -81,15 +89,18 @@ export default function DashboardView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {recent.map(call => (
-                      <tr key={call.id} style={{borderBottom: '1px solid var(--border-color)'}}>
-                        <td style={{padding: '15px 20px'}}>{call.filename}</td>
-                        <td style={{padding: '15px 20px'}}><span className="badge badge-ai" style={{background: 'rgba(255,255,255,0.05)', color: '#8b949e', border: '1px solid #30363d'}}>{call.ai_version.replace(' | ', ' ⚙️ ')}</span></td>
-                        <td style={{padding: '15px 20px'}}><span className={`badge badge-${call.emotion}`}>{call.emotion}</span></td>
-                        <td style={{padding: '15px 20px', color: 'var(--success-color)'}}>${Number(call.cost || 0).toFixed(4)}</td>
-                        <td style={{padding: '15px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>{new Date(call.created_at).toLocaleString()}</td>
-                      </tr>
-                    ))}
+                    {recent.map(call => {
+                      const cColor = getMeta(call.emotion).color;
+                      return (
+                        <tr key={call.id} style={{borderBottom: '1px solid var(--border-color)'}}>
+                          <td style={{padding: '15px 20px'}}>{call.filename}</td>
+                          <td style={{padding: '15px 20px'}}><span className="badge badge-ai" style={{background: 'rgba(255,255,255,0.05)', color: '#8b949e', border: '1px solid #30363d'}}>{call.ai_version.replace(' | ', ' ⚙️ ')}</span></td>
+                          <td style={{padding: '15px 20px'}}><span className={`badge`} style={{background: `${cColor}15`, color: cColor, border: `1px solid ${cColor}40`}}>{call.emotion.toUpperCase()}</span></td>
+                          <td style={{padding: '15px 20px', color: 'var(--success-color)'}}>${Number(call.cost || 0).toFixed(4)}</td>
+                          <td style={{padding: '15px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>{new Date(call.created_at).toLocaleString()}</td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               )}

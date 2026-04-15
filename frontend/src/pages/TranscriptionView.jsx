@@ -12,6 +12,19 @@ const ANALYZER_OPTIONS = {
     { value: 'claude-3-5-sonnet', label: 'Claude 3.5 Sonnet' },
     { value: 'claude-3-opus', label: 'Claude 3 Opus' },
     { value: 'claude-3-haiku', label: 'Claude 3 Haiku' }
+  ],
+  google: [
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' }
+  ],
+  groq: [
+    { value: 'llama3-70b-8192', label: 'Llama 3 (70B)' },
+    { value: 'llama3-8b-8192', label: 'Llama 3 (8B)' },
+    { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' }
+  ],
+  mistral: [
+    { value: 'mistral-large-latest', label: 'Mistral Large' },
+    { value: 'open-mixtral-8x22b', label: 'Mixtral 8x22B' }
   ]
 };
 
@@ -87,6 +100,9 @@ export default function TranscriptionView({ selectedFiles }) {
           <select value={analyzerProvider} onChange={handleProviderChange}>
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
+            <option value="google">Google Gemini</option>
+            <option value="groq">Groq (Meta Llama)</option>
+            <option value="mistral">Mistral API</option>
           </select>
         </div>
 
@@ -119,7 +135,7 @@ export default function TranscriptionView({ selectedFiles }) {
                    <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500}}>
                      API Cost: <span style={{color: 'var(--success-color)'}}>${Number(res.data.cost).toFixed(4)}</span>
                    </span>
-                   <span className={`badge badge-${res.data.emotion}`}>{res.data.emotion}</span>
+                   <span className={`badge`} style={{border: '1px solid rgba(255,255,255,0.2)'}}>{res.data.emotion.toUpperCase()}</span>
                 </div>
               ) : (
                 <span className="badge badge-bad">Failed</span>

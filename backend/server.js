@@ -95,11 +95,13 @@ const transcribeWithWhisper = async (filePath, openaiKey) => {
   return response.data;
 };
 
-const analyzeEmotionOpenAI = async (transcript, model, apiKey) => {
-  const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+const EMOTION_SYSTEM_PROMPT = 'You are an AI tasked with emotional analysis. Respond with EXACTLY ONE WORD from this list based on the transcript: DELIGHTED, SATISFIED, NEUTRAL, CONFUSED, FRUSTRATED, ANGRY, URGENT. Do not include any punctuation or extra words.';
+
+const analyzeEmotionOpenAIFormat = async (transcript, model, apiKey, baseUrl="https://api.openai.com/v1/chat/completions") => {
+  const response = await axios.post(baseUrl, {
     model: model,
     messages: [
-      { role: 'system', content: 'You are an AI tasked with emotional analysis. Respond with exactly one word: GOOD, BAD, or NEUTRAL.' },
+      { role: 'system', content: EMOTION_SYSTEM_PROMPT },
       { role: 'user', content: `Analyze the sentiment of this call transcript: "${transcript}"`}
     ],
     temperature: 0
@@ -108,20 +110,19 @@ const analyzeEmotionOpenAI = async (transcript, model, apiKey) => {
   });
   return {
     emotion: response.data.choices[0].message.content.trim().toLowerCase(),
-    input_tokens: response.data.usage.prompt_tokens,
-    output_tokens: response.data.usage.completion_tokens
+    input_tokens: response.data.usage?.prompt_tokens || (transcript.length/4),
+    output_tokens: response.data.usage?.completion_tokens || 1
   };
 };
 
 const analyzeEmotionAnthropic = async (transcript, model, apiKey) => {
-  // Translate UI names to actual API models
   const apiModel = model === 'claude-3-5-sonnet' ? 'claude-3-5-sonnet-20240620' : 
                    model === 'claude-3-opus' ? 'claude-3-opus-20240229' : 'claude-3-haiku-20240307';
 
   const response = await axios.post('https://api.anthropic.com/v1/messages', {
     model: apiModel,
     max_tokens: 10,
-    system: 'You are an AI tasked with emotional analysis. Respond with exactly one word: GOOD, BAD, or NEUTRAL.',
+    system: EMOTION_SYSTEM_PROMPT,
     messages: [
       { role: 'user', content: `Analyze the sentiment of this call transcript: "${transcript}"`}
     ]
@@ -140,14 +141,39 @@ const analyzeEmotionAnthropic = async (transcript, model, apiKey) => {
   };
 };
 
-// Pricing rates
+const analyzeEmotionGoogle = async (transcript, model, apiKey) => {
+  const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    systemInstruction: { parts: [{ text: EMOTION_SYSTEM_PROMPT }] },
+    contents: [
+      { role: 'user', parts: [{ text: `Analyze the sentiment of this call transcript: "${transcript}"` }] }
+    ],
+    generationConfig: { temperature: 0 }
+  }, {
+    headers: { 'Content-Type': 'application/json' }
+  });
+  
+  return {
+    emotion: response.data.candidates[0].content.parts[0].text.trim().toLowerCase(),
+    input_tokens: response.data.usageMetadata?.promptTokenCount || (transcript.length/4),
+    output_tokens: response.data.usageMetadata?.candidatesTokenCount || 1
+  };
+};
+
+// Standard fallback flat rates for missing pricing
+const DEFAULT_RATES = { input: 0.50 / 1000000, output: 0.50 / 1000000 };
+
 const RATES = {
-  transcribe: { 'openai': 0.006 }, // $0.006 per minute
+  transcribe: { 'openai': 0.006 },
   analyzer: {
     'openai': { input: 5.00 / 1000000, output: 15.00 / 1000000 },
-    'anthropic': { input: 3.00 / 1000000, output: 15.00 / 1000000 }
+    'anthropic': { input: 3.00 / 1000000, output: 15.00 / 1000000 },
+    'google': { input: 3.50 / 1000000, output: 10.50 / 1000000 },
+    'mistral': { input: 2.00 / 1000000, output: 6.00 / 1000000 },
+    'groq': { input: 0.59 / 1000000, output: 0.79 / 1000000 }
   }
 };
+
+const VALID_EMOTIONS = ['delighted', 'satisfied', 'neutral', 'confused', 'frustrated', 'angry', 'urgent'];
 
 // POST /api/transcribe
 app.post('/api/transcribe', async (req, res) => {
@@ -163,7 +189,7 @@ app.post('/api/transcribe', async (req, res) => {
   const analyzerKey = creds.find(c => c.provider === analyzerProvider)?.api_key;
 
   if (!transcriberKey) return res.status(403).json({ error: `Missing API Key for Transcriber: ${transcriberProvider}` });
-  if (!analyzerKey && analyzerProvider !== 'mock') return res.status(403).json({ error: `Missing API Key for Analyzer: ${analyzerProvider}` });
+  if (!analyzerKey) return res.status(403).json({ error: `Missing API Key for Analyzer: ${analyzerProvider}` });
 
   const results = [];
 
@@ -182,31 +208,36 @@ app.post('/api/transcribe', async (req, res) => {
 
       // 4. Analysis Network Call
       let emotion = 'neutral';
-      let inputToks = transcriptText.length / 4;
-      let outputToks = 1;
+      let inputToks = 0, outputToks = 0;
+      const rateSchema = RATES.analyzer[analyzerProvider] || DEFAULT_RATES;
 
       if (analyzerProvider === 'openai') {
-        const rez = await analyzeEmotionOpenAI(transcriptText, analyzerVersion, analyzerKey);
-        emotion = rez.emotion;
-        inputToks = rez.input_tokens;
-        outputToks = rez.output_tokens;
-        totalCost += (inputToks * RATES.analyzer.openai.input) + (outputToks * RATES.analyzer.openai.output);
+        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey);
+        emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       } else if (analyzerProvider === 'anthropic') {
         const rez = await analyzeEmotionAnthropic(transcriptText, analyzerVersion, analyzerKey);
-        emotion = rez.emotion;
-        inputToks = rez.input_tokens;
-        outputToks = rez.output_tokens;
-        totalCost += (inputToks * RATES.analyzer.anthropic.input) + (outputToks * RATES.analyzer.anthropic.output);
-      } else {
-        // Fallback dummy
-        if (transcriptText.toLowerCase().includes('satisfied')) emotion = 'good';
-        else if (transcriptText.toLowerCase().includes('angry')) emotion = 'bad';
+        emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
+      } else if (analyzerProvider === 'google') {
+        const rez = await analyzeEmotionGoogle(transcriptText, analyzerVersion, analyzerKey);
+        emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
+      } else if (analyzerProvider === 'mistral') {
+        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, 'https://api.mistral.ai/v1/chat/completions');
+        emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
+      } else if (analyzerProvider === 'groq') {
+        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, 'https://api.groq.com/openai/v1/chat/completions');
+        emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       }
 
-      // Cleanup weird characters from LLM
-      if (!['good', 'bad', 'neutral'].includes(emotion)) emotion = 'neutral';
+      totalCost += (inputToks * rateSchema.input) + (outputToks * rateSchema.output);
 
-      // 5. Store to database securely
+      // Clean LLM parsing mistakes
+      const strippedEmotion = emotion.replace(/[^a-z]/g, '');
+      emotion = VALID_EMOTIONS.includes(strippedEmotion) ? strippedEmotion : 'neutral';
+
+      // 5. DEDUPLICATION: Delete existing rows for this file
+      await supabase.from('calls').delete().eq('filename', file);
+
+      // 6. Store to database securely
       const { data, error } = await supabase
         .from('calls')
         .insert([{
@@ -232,20 +263,18 @@ app.post('/api/transcribe', async (req, res) => {
 // GET /api/dashboard summary
 app.get('/api/dashboard', async (req, res) => {
   try {
-    const { count: goodCount } = await supabase.from('calls').select('*', { count: 'exact', head: true }).eq('emotion', 'good');
-    const { count: badCount } = await supabase.from('calls').select('*', { count: 'exact', head: true }).eq('emotion', 'bad');
-    const { count: neutralCount } = await supabase.from('calls').select('*', { count: 'exact', head: true }).eq('emotion', 'neutral');
+    const { data: calls, error: fetchErr } = await supabase.from('calls').select('*').order('created_at', { ascending: false });
+    if (fetchErr) throw fetchErr;
 
-    const { data: recentCalls } = await supabase.from('calls').select('*').order('created_at', { ascending: false }).limit(10);
+    const stats = {};
+    calls.forEach(call => {
+      const em = call.emotion || 'neutral';
+      stats[em] = (stats[em] || 0) + 1;
+    });
 
     res.json({
-      stats: {
-        good: goodCount || 0,
-        bad: badCount || 0,
-        neutral: neutralCount || 0,
-        total: (goodCount || 0) + (badCount || 0) + (neutralCount || 0)
-      },
-      recentCalls: recentCalls || []
+      stats: stats,
+      recentCalls: calls.slice(0, 10) || []
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
