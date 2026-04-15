@@ -203,6 +203,7 @@ app.post('/api/transcribe', async (req, res) => {
 
   for (const file of files) {
     try {
+      const startTime = Date.now();
       const filePath = path.join(ARCHIVE_PATH, file);
 
       // 2. Measure Duration (for cost)
@@ -242,6 +243,9 @@ app.post('/api/transcribe', async (req, res) => {
       const strippedEmotion = emotion.replace(/[^a-z]/g, '');
       emotion = VALID_EMOTIONS.includes(strippedEmotion) ? strippedEmotion : 'neutral';
 
+      const endTime = Date.now();
+      const timeTakenSecs = (endTime - startTime) / 1000;
+
       // 5. DEDUPLICATION: Delete existing rows for this file
       await supabase.from('calls').delete().eq('filename', file);
 
@@ -253,7 +257,8 @@ app.post('/api/transcribe', async (req, res) => {
           transcript: transcriptText,
           ai_version: `${transcriberProvider} whisper | ${analyzerProvider} ${analyzerVersion}`,
           emotion: emotion,
-          cost: totalCost
+          cost: totalCost,
+          processing_time: timeTakenSecs
         }])
         .select();
 

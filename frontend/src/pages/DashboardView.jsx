@@ -85,6 +85,7 @@ export default function DashboardView() {
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Model</th>
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Emotion</th>
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Cost</th>
+                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Time</th>
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Date</th>
                     </tr>
                   </thead>
@@ -97,6 +98,7 @@ export default function DashboardView() {
                           <td style={{padding: '15px 20px'}}><span className="badge badge-ai" style={{background: 'rgba(255,255,255,0.05)', color: '#8b949e', border: '1px solid #30363d'}}>{call.ai_version.replace(' | ', ' ⚙️ ')}</span></td>
                           <td style={{padding: '15px 20px'}}><span className={`badge`} style={{background: `${cColor}15`, color: cColor, border: `1px solid ${cColor}40`}}>{call.emotion.toUpperCase()}</span></td>
                           <td style={{padding: '15px 20px', color: 'var(--success-color)'}}>${Number(call.cost || 0).toFixed(4)}</td>
+                          <td style={{padding: '15px 20px', color: 'var(--text-primary)'}}>{Number(call.processing_time || 0).toFixed(1)}s</td>
                           <td style={{padding: '15px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>{new Date(call.created_at).toLocaleString()}</td>
                         </tr>
                       )

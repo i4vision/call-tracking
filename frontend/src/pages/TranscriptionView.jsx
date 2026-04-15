@@ -135,6 +135,9 @@ export default function TranscriptionView({ selectedFiles }) {
                    <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500}}>
                      API Cost: <span style={{color: 'var(--success-color)'}}>${Number(res.data.cost).toFixed(4)}</span>
                    </span>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500}}>
+                     Time: <span style={{color: 'var(--text-primary)'}}>{Number(res.data.processing_time || 0).toFixed(1)}s</span>
+                   </span>
                    <span className={`badge`} style={{border: '1px solid rgba(255,255,255,0.2)'}}>{res.data.emotion.toUpperCase()}</span>
                 </div>
               ) : (
