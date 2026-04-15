@@ -123,7 +123,7 @@ app.post('/api/transcribe', async (req, res) => {
         .insert([{
           filename: file,
           transcript: transcriptText,
-          ai_version: model,
+          ai_version: version,
           emotion: emotion
         }])
         .select();
