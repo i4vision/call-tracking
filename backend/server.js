@@ -105,11 +105,11 @@ const transcribeWithWhisper = async (filePath, key, provider) => {
 
 const EMOTION_SYSTEM_PROMPT = 'You are an AI tasked with emotional analysis. Respond with EXACTLY ONE WORD from this list based on the transcript: DELIGHTED, SATISFIED, NEUTRAL, CONFUSED, FRUSTRATED, ANGRY, URGENT. Do not include any punctuation or extra words.';
 
-const analyzeEmotionOpenAIFormat = async (transcript, model, apiKey, baseUrl="https://api.openai.com/v1/chat/completions") => {
+const analyzeEmotionOpenAIFormat = async (transcript, model, apiKey, systemPrompt, baseUrl="https://api.openai.com/v1/chat/completions") => {
   const response = await axios.post(baseUrl, {
     model: model,
     messages: [
-      { role: 'system', content: EMOTION_SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: `Analyze the sentiment of this call transcript: "${transcript}"`}
     ],
     temperature: 0
@@ -123,14 +123,14 @@ const analyzeEmotionOpenAIFormat = async (transcript, model, apiKey, baseUrl="ht
   };
 };
 
-const analyzeEmotionAnthropic = async (transcript, model, apiKey) => {
+const analyzeEmotionAnthropic = async (transcript, model, apiKey, systemPrompt) => {
   const apiModel = model === 'claude-3-5-sonnet' ? 'claude-3-5-sonnet-20240620' : 
                    model === 'claude-3-opus' ? 'claude-3-opus-20240229' : 'claude-3-haiku-20240307';
 
   const response = await axios.post('https://api.anthropic.com/v1/messages', {
     model: apiModel,
     max_tokens: 10,
-    system: EMOTION_SYSTEM_PROMPT,
+    system: systemPrompt,
     messages: [
       { role: 'user', content: `Analyze the sentiment of this call transcript: "${transcript}"`}
     ]
@@ -149,9 +149,9 @@ const analyzeEmotionAnthropic = async (transcript, model, apiKey) => {
   };
 };
 
-const analyzeEmotionGoogle = async (transcript, model, apiKey) => {
+const analyzeEmotionGoogle = async (transcript, model, apiKey, systemPrompt) => {
   const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-    systemInstruction: { parts: [{ text: EMOTION_SYSTEM_PROMPT }] },
+    systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [
       { role: 'user', parts: [{ text: `Analyze the sentiment of this call transcript: "${transcript}"` }] }
     ],
@@ -185,9 +185,11 @@ const VALID_EMOTIONS = ['delighted', 'satisfied', 'neutral', 'confused', 'frustr
 
 // POST /api/transcribe
 app.post('/api/transcribe', async (req, res) => {
-  const { files, transcriberProvider, analyzerProvider, analyzerVersion } = req.body;
+  const { files, transcriberProvider, analyzerProvider, analyzerVersion, customPrompt } = req.body;
   if (!files || !Array.isArray(files) || files.length === 0) return res.status(400).json({ error: 'No files provided for transcription' });
   if (!transcriberProvider || !analyzerProvider || !analyzerVersion) return res.status(400).json({ error: 'Missing AI providers or versions' });
+
+  const activePrompt = customPrompt && customPrompt.trim().length > 0 ? customPrompt : EMOTION_SYSTEM_PROMPT;
 
   // 1. Fetch Credentials
   const { data: creds, error: credsError } = await supabase.from('ai_credentials').select('*');
@@ -221,19 +223,19 @@ app.post('/api/transcribe', async (req, res) => {
       const rateSchema = RATES.analyzer[analyzerProvider] || DEFAULT_RATES;
 
       if (analyzerProvider === 'openai') {
-        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey);
+        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, activePrompt);
         emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       } else if (analyzerProvider === 'anthropic') {
-        const rez = await analyzeEmotionAnthropic(transcriptText, analyzerVersion, analyzerKey);
+        const rez = await analyzeEmotionAnthropic(transcriptText, analyzerVersion, analyzerKey, activePrompt);
         emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       } else if (analyzerProvider === 'google') {
-        const rez = await analyzeEmotionGoogle(transcriptText, analyzerVersion, analyzerKey);
+        const rez = await analyzeEmotionGoogle(transcriptText, analyzerVersion, analyzerKey, activePrompt);
         emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       } else if (analyzerProvider === 'mistral') {
-        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, 'https://api.mistral.ai/v1/chat/completions');
+        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, activePrompt, 'https://api.mistral.ai/v1/chat/completions');
         emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       } else if (analyzerProvider === 'groq') {
-        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, 'https://api.groq.com/openai/v1/chat/completions');
+        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, activePrompt, 'https://api.groq.com/openai/v1/chat/completions');
         emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       }
 
@@ -258,7 +260,8 @@ app.post('/api/transcribe', async (req, res) => {
           ai_version: `${transcriberProvider} whisper | ${analyzerProvider} ${analyzerVersion}`,
           emotion: emotion,
           cost: totalCost,
-          processing_time: timeTakenSecs
+          processing_time: timeTakenSecs,
+          system_prompt: activePrompt
         }])
         .select();
 

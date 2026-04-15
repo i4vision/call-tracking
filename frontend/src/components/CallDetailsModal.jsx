@@ -38,6 +38,13 @@ export default function CallDetailsModal({ call, onClose }) {
           </div>
 
           <div>
+             <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8}}>System Prompt Engaged</div>
+             <div style={{padding: '10px 15px', background: 'var(--bg-color)', borderRadius: 6, border: '1px solid var(--border-color)', fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '0.85rem'}}>
+               {call.system_prompt || 'Default hardcoded prompt'}
+             </div>
+          </div>
+
+          <div>
              <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5}}><FileText size={14}/> Extracted Transcript</div>
              <div style={{padding: 20, background: 'var(--bg-color-tertiary)', borderRadius: 8, border: '1px solid var(--border-color)', maxHeight: 300, overflowY: 'auto', lineHeight: 1.6, color: 'var(--text-primary)'}}>
                {call.transcript}

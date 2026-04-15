@@ -32,6 +32,7 @@ export default function TranscriptionView({ selectedFiles }) {
   const [transcriberProvider, setTranscriberProvider] = useState('openai');
   const [analyzerProvider, setAnalyzerProvider] = useState('openai');
   const [analyzerVersion, setAnalyzerVersion] = useState(ANALYZER_OPTIONS['openai'][0].value);
+  const [customPrompt, setCustomPrompt] = useState('You are an AI tasked with emotional analysis. Respond with EXACTLY ONE WORD from this list based on the transcript: DELIGHTED, SATISFIED, NEUTRAL, CONFUSED, FRUSTRATED, ANGRY, URGENT. Do not include any punctuation or extra words.');
   const [transcribing, setTranscribing] = useState(false);
   const [results, setResults] = useState([]);
 
@@ -53,7 +54,8 @@ export default function TranscriptionView({ selectedFiles }) {
           files: selectedFiles.map(f => f.filename),
           transcriberProvider,
           analyzerProvider,
-          analyzerVersion
+          analyzerVersion,
+          customPrompt
         })
       });
       const data = await response.json();
@@ -113,6 +115,20 @@ export default function TranscriptionView({ selectedFiles }) {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+        </div>
+
+        <div className="select-group" style={{gridColumn: '1 / -1', marginTop: 10}}>
+          <label>Emotion Engine System Prompt</label>
+          <textarea 
+            value={customPrompt} 
+            onChange={e => setCustomPrompt(e.target.value)}
+            style={{
+               width: '100%', minHeight: 80, padding: 15, borderRadius: 8, 
+               background: 'var(--bg-color-tertiary)', color: 'var(--text-primary)',
+               border: '1px solid var(--border-color)', resize: 'vertical',
+               fontFamily: 'monospace', fontSize: '0.85rem'
+            }}
+          />
         </div>
 
         <button 
