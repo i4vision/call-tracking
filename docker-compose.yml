@@ -6,9 +6,9 @@ services:
     container_name: call_tracking_app
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "19432:8080"
     volumes:
       # Map the Windows host directory to the internal container directory
-      - C:\OpenPhoneArchive:/archive:ro
+      - /c/OpenPhoneArchive:/archive:ro
     env_file:
       - backend/.env

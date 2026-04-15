@@ -6,7 +6,8 @@ import DashboardView from './pages/DashboardView';
 import './index.css';
 
 // Central API URL
-export const API_URL = 'http://localhost:8080/api';
+// Uses dynamic relative path to support any random Portainer port
+export const API_URL = '/api';
 
 function App() {
   const [files, setFiles] = useState([]);
