@@ -290,7 +290,7 @@ app.get('/api/dashboard', async (req, res) => {
 
     res.json({
       stats: stats,
-      recentCalls: calls.slice(0, 10) || []
+      recentCalls: calls.slice(0, 100) || []
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
