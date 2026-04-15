@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, NavLink, useNavigate } from 'react-router-dom';
 import { Mic, BarChart2, Headphones, FileAudio, Settings } from 'lucide-react';
 import TranscriptionView from './pages/TranscriptionView';
 import DashboardView from './pages/DashboardView';
@@ -7,16 +7,15 @@ import SettingsModal from './components/SettingsModal';
 import FileHistoryModal from './components/FileHistoryModal';
 import './index.css';
 
-// Central API URL
-// Uses dynamic relative path to support any random Portainer port
 export const API_URL = '/api';
 
-function App() {
+function AppContent() {
   const [files, setFiles] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewingHistoryFile, setViewingHistoryFile] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${API_URL}/files`)
@@ -36,6 +35,7 @@ function App() {
     if (newSel.has(id)) newSel.delete(id);
     else newSel.add(id);
     setSelectedFileIds(newSel);
+    navigate('/');
   };
 
   const getSelectedFiles = () => {
@@ -43,75 +43,79 @@ function App() {
   };
 
   return (
-    <Router>
-      <div className="app-container">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <h2><Headphones size={24} color="var(--accent-color)" /> OpenPhone AI</h2>
-            <div className="nav-links">
-              <NavLink 
-                to="/" 
-                className={({isActive}) => isActive ? "nav-link active" : "nav-link"}
-              >
-                <Mic size={16} style={{marginRight: 4}}/> Transcribe
-              </NavLink>
-              <NavLink 
-                to="/dashboard" 
-                className={({isActive}) => isActive ? "nav-link active" : "nav-link"}
-              >
-                <BarChart2 size={16} style={{marginRight: 4}}/> Dashboard
-              </NavLink>
-              <button 
-                onClick={() => setIsSettingsOpen(true)}
-                className="nav-link"
-                style={{background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center'}}
-              >
-                <Settings size={16} style={{marginRight: 4}}/> API Keys
-              </button>
-            </div>
+    <div className="app-container">
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <h2><Headphones size={24} color="var(--accent-color)" /> OpenPhone AI</h2>
+          <div className="nav-links">
+            <NavLink 
+              to="/" 
+              className={({isActive}) => isActive ? "nav-link active" : "nav-link"}
+            >
+              <Mic size={16} style={{marginRight: 4}}/> Transcribe
+            </NavLink>
+            <NavLink 
+              to="/dashboard" 
+              className={({isActive}) => isActive ? "nav-link active" : "nav-link"}
+            >
+              <BarChart2 size={16} style={{marginRight: 4}}/> Dashboard
+            </NavLink>
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="nav-link"
+              style={{background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center'}}
+            >
+              <Settings size={16} style={{marginRight: 4}}/> API Keys
+            </button>
           </div>
-          
-          <div className="file-list">
-            <h3 style={{fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '10px 12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
-              Recordings ({files.length})
-            </h3>
-            {loading ? (
-              <div style={{padding: 12, color: 'var(--text-secondary)'}}>Loading...</div>
-            ) : files.length === 0 ? (
-              <div style={{padding: 12, color: 'var(--text-secondary)'}}>No .mp3 files found.</div>
-            ) : (
-              files.map((file) => (
-                <div 
-                  key={file.id} 
-                  className="file-item"
-                  onClick={() => setViewingHistoryFile(file.filename)}
-                >
-                  <input 
-                    type="checkbox" 
-                    checked={selectedFileIds.has(file.id)}
-                    onChange={() => toggleFile(file.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <FileAudio size={18} className="file-icon" />
-                  <span className="file-name" title={file.filename}>{file.filename}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </aside>
-
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<TranscriptionView selectedFiles={getSelectedFiles()} />} />
-            <Route path="/dashboard" element={<DashboardView />} />
-          </Routes>
-        </main>
+        </div>
         
-        {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
-        {viewingHistoryFile && <FileHistoryModal filename={viewingHistoryFile} onClose={() => setViewingHistoryFile(null)} />}
-      </div>
-    </Router>
+        <div className="file-list">
+          <h3 style={{fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '10px 12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
+            Recordings ({files.length})
+          </h3>
+          {loading ? (
+            <div style={{padding: 12, color: 'var(--text-secondary)'}}>Loading...</div>
+          ) : files.length === 0 ? (
+            <div style={{padding: 12, color: 'var(--text-secondary)'}}>No .mp3 files found.</div>
+          ) : (
+            files.map((file) => (
+              <div 
+                key={file.id} 
+                className="file-item"
+                onClick={() => setViewingHistoryFile(file.filename)}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={selectedFileIds.has(file.id)}
+                  onChange={() => toggleFile(file.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <FileAudio size={18} className="file-icon" />
+                <span className="file-name" title={file.filename}>{file.filename}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<TranscriptionView selectedFiles={getSelectedFiles()} />} />
+          <Route path="/dashboard" element={<DashboardView />} />
+        </Routes>
+      </main>
+      
+      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+      {viewingHistoryFile && <FileHistoryModal filename={viewingHistoryFile} onClose={() => setViewingHistoryFile(null)} />}
+    </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
