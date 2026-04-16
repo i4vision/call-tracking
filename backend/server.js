@@ -276,9 +276,9 @@ app.post('/api/transcribe', async (req, res) => {
       const filePath = path.join(ARCHIVE_PATH, file);
 
       // 2. Measure Duration (for cost)
-      const durationSecs = await getAudioDuration(filePath);
-      const minutes = durationSecs / 60;
-      let totalCost = (RATES.transcribe[transcriberProvider] || 0) * minutes;
+      const audioDuration = await getAudioDuration(filePath);
+      let minutes = audioDuration / 60;
+      let costTranscribe = (RATES.transcribe[transcriberProvider] || 0) * minutes;
 
       // 3. Transcription Network Call
       let transcriptText = "";
@@ -315,14 +315,12 @@ app.post('/api/transcribe', async (req, res) => {
         emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       }
 
-      totalCost += (inputToks * rateSchema.input) + (outputToks * rateSchema.output);
+      let costAnalyze = (inputToks * rateSchema.input) + (outputToks * rateSchema.output);
+      let totalCost = costTranscribe + costAnalyze;
 
       // Clean LLM parsing mistakes
       const strippedEmotion = emotion.replace(/[^a-z]/g, '');
       emotion = VALID_EMOTIONS.includes(strippedEmotion) ? strippedEmotion : 'neutral';
-
-      const endTime = Date.now();
-      const timeTakenSecs = (endTime - startTime) / 1000;
 
       // 6. Store to database securely
       const { data, error } = await supabase
@@ -333,9 +331,11 @@ app.post('/api/transcribe', async (req, res) => {
           ai_version: `${transcriberProvider} whisper | ${analyzerProvider} ${analyzerVersion}`,
           emotion: emotion,
           cost: totalCost,
-          processing_time: timeTakenSecs,
+          cost_transcribe: costTranscribe,
+          cost_analyze: costAnalyze,
+          processing_time: (Date.now() - startTime) / 1000,
           system_prompt: activePrompt,
-          audio_duration: durationSecs
+          audio_duration: audioDuration
         }])
         .select();
 

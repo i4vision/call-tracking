@@ -17,16 +17,16 @@ export default function CallDetailsModal({ call, onClose }) {
           
           <div style={{display: 'flex', gap: 15, flexWrap: 'wrap'}}>
             <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
-              <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Database size={12}/> Processing Cost</div>
-              <div style={{color: 'var(--success-color)', fontWeight: 600}}>${Number(call.cost).toFixed(4)}</div>
-            </div>
-            <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
-              <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Clock size={12}/> AI Time</div>
-              <div style={{color: 'var(--text-primary)', fontWeight: 600}}>{Number(call.processing_time).toFixed(1)}s</div>
-            </div>
-            <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
-              <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Timer size={12}/> Audio Len</div>
+              <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Database size={12}/> Audio Len</div>
               <div style={{color: 'var(--text-primary)', fontWeight: 600}}>{call.audio_duration ? `${Math.floor(Number(call.audio_duration) / 60)}m ${Math.round(Number(call.audio_duration) % 60)}s` : 'Unknown'}</div>
+            </div>
+            <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
+              <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Database size={12}/> Audio Cost</div>
+              <div style={{color: 'var(--success-color)', fontWeight: 600}}>${Number(call.cost_transcribe || 0).toFixed(4)}</div>
+            </div>
+            <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
+              <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Database size={12}/> AI Cost</div>
+              <div style={{color: 'var(--accent-color)', fontWeight: 600}}>${Number(call.cost_analyze || 0).toFixed(4)}</div>
             </div>
             <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
               <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Activity size={12}/> Sentiment</div>

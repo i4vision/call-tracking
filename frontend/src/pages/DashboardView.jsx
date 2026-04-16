@@ -98,11 +98,12 @@ export default function DashboardView() {
                   <thead>
                     <tr style={{background: 'var(--bg-color-tertiary)', borderBottom: '1px solid var(--border-color)'}}>
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Filename</th>
-                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Model</th>
-                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Emotion</th>
-                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Cost</th>
-                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Time</th>
                       <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Date</th>
+                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Models</th>
+                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Audio Cost</th>
+                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>AI Cost</th>
+                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Time (sec)</th>
+                      <th style={{padding: '15px 20px', color: 'var(--text-secondary)', fontWeight: 500}}>Sentiment</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -110,12 +111,13 @@ export default function DashboardView() {
                       const cColor = getMeta(call.emotion).color;
                       return (
                         <tr key={call.id} style={{borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background-color 0.2s'}} onClick={() => setSelectedCall(call)} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-color-tertiary)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                          <td style={{padding: '15px 20px'}}>{call.filename}</td>
+                          <td style={{padding: '15px 20px', fontFamily: 'monospace'}}>{call.filename}</td>
+                          <td style={{padding: '15px 20px', color: 'var(--text-secondary)', fontSize: '0.85rem'}}>{new Date(call.created_at).toLocaleString()}</td>
                           <td style={{padding: '15px 20px'}}><span className="badge badge-ai" style={{background: 'rgba(255,255,255,0.05)', color: '#8b949e', border: '1px solid #30363d'}}>{call.ai_version.replace(' | ', ' ⚙️ ')}</span></td>
-                          <td style={{padding: '15px 20px'}}><span className={`badge`} style={{background: `${cColor}15`, color: cColor, border: `1px solid ${cColor}40`}}>{call.emotion.toUpperCase()}</span></td>
-                          <td style={{padding: '15px 20px', color: 'var(--success-color)'}}>${Number(call.cost || 0).toFixed(4)}</td>
+                          <td style={{padding: '15px 20px', color: 'var(--success-color)'}}>${Number(call.cost_transcribe || 0).toFixed(4)}</td>
+                          <td style={{padding: '15px 20px', color: 'var(--accent-color)'}}>${Number(call.cost_analyze || 0).toFixed(4)}</td>
                           <td style={{padding: '15px 20px', color: 'var(--text-primary)'}}>{Number(call.processing_time || 0).toFixed(1)}s</td>
-                          <td style={{padding: '15px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>{new Date(call.created_at).toLocaleString()}</td>
+                          <td style={{padding: '15px 20px'}}><span className={`badge`} style={{background: `${cColor}15`, color: cColor, border: `1px solid ${cColor}40`}}>{call.emotion.toUpperCase()}</span></td>
                         </tr>
                       )
                     })}

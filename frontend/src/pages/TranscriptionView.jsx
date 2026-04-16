@@ -162,7 +162,10 @@ export default function TranscriptionView({ selectedFiles }) {
                 <div style={{display: 'flex', gap: 15, alignItems: 'center', flexWrap: 'wrap'}}>
                    <span className={`badge`} style={{border: '1px solid rgba(255,255,255,0.2)', whiteSpace: 'nowrap'}}>{res.data.emotion.toUpperCase()}</span>
                    <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
-                     Cost: <span style={{color: 'var(--success-color)', fontWeight: 600}}>${Number(res.data.cost).toFixed(4)}</span>
+                     Audio: <span style={{color: 'var(--success-color)', fontWeight: 600}}>${Number(res.data.cost_transcribe || 0).toFixed(4)}</span>
+                   </span>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                     Brain: <span style={{color: 'var(--accent-color)', fontWeight: 600}}>${Number(res.data.cost_analyze || 0).toFixed(4)}</span>
                    </span>
                    <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
                      Time: <span style={{color: 'var(--text-primary)', fontWeight: 600}}>{Number(res.data.processing_time || 0).toFixed(1)}s</span>

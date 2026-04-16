@@ -97,14 +97,22 @@ export default function FileHistoryModal({ filename, onClose, playingFile, toggl
                   <span className={`badge`} style={{border: '1px solid rgba(255,255,255,0.2)'}}>{call.emotion.toUpperCase()}</span>
                 </div>
 
+                <div style={{display: 'flex', gap: 15, alignItems: 'center', flexWrap: 'wrap', marginBottom: 20}}>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                     Audio: <span style={{color: 'var(--success-color)', fontWeight: 600}}>${Number(call.cost_transcribe || 0).toFixed(4)}</span>
+                   </span>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                     Brain: <span style={{color: 'var(--accent-color)', fontWeight: 600}}>${Number(call.cost_analyze || 0).toFixed(4)}</span>
+                   </span>
+                   <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                     Time: <span style={{color: 'var(--text-primary)', fontWeight: 600}}>{Number(call.processing_time || 0).toFixed(1)}s</span>
+                   </span>
+                </div>
+
                 <div style={{display: 'flex', gap: 15, flexWrap: 'wrap', marginBottom: 20}}>
                   <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
                     <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}>Processing Unit</div>
                     <div style={{color: 'var(--accent-color)', fontWeight: 600, fontSize: '0.8rem', fontFamily: 'monospace'}}>{call.ai_version.replace(' | ', ' ⚙️ ')}</div>
-                  </div>
-                  <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
-                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Clock size={12}/> AI & Cost</div>
-                    <div style={{color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem'}}>{Number(call.processing_time).toFixed(1)}s • <span style={{color: 'var(--success-color)'}}>${Number(call.cost).toFixed(4)}</span></div>
                   </div>
                   <div style={{background: 'var(--bg-color-tertiary)', padding: '10px 15px', borderRadius: 8, flex: 1, border: '1px solid var(--border-color)'}}>
                     <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5}}><Timer size={12}/> Audio Len</div>
