@@ -136,17 +136,17 @@ export default function DashboardView() {
                             <tr 
                               className="dashboard-row" 
                               style={{borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background-color 0.2s', background: isExpanded ? 'var(--bg-color-secondary)' : 'transparent'}} 
-                              onClick={() => hasChildren ? toggleRow(parentCall.filename) : setSelectedCall(parentCall)}
+                              onClick={() => setSelectedCall(parentCall)}
                               onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-color-tertiary)'} 
                               onMouseLeave={e => e.currentTarget.style.backgroundColor = isExpanded ? 'var(--bg-color-secondary)' : 'transparent'}
                             >
                               <td style={{padding: '15px 20px', fontFamily: 'monospace', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8}}>
                                 {hasChildren && (
-                                  <button onClick={(e) => toggleRow(parentCall.filename, e)} style={{background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center'}}>
+                                  <button onClick={(e) => toggleRow(parentCall.filename, e)} style={{background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px', borderRadius: '4px'}}>
                                     {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                   </button>
                                 )}
-                                {!hasChildren && <div style={{width: 16}}></div>}
+                                {!hasChildren && <div style={{width: 24}}></div>}
                                 <span>{parentCall.filename}</span>
                                 {hasChildren && <span style={{fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: 4, color: 'var(--text-secondary)', marginLeft: 8}}>{group.length} Transcripts</span>}
                               </td>
