@@ -1,10 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { X, Mic, Layers, Clock, Activity, FileText, Timer } from 'lucide-react';
+import { X, Mic, Layers, Clock, Activity, FileText, Timer, Play, Pause } from 'lucide-react';
 import { API_URL } from '../App';
 
-export default function FileHistoryModal({ filename, onClose }) {
+export default function FileHistoryModal({ filename, onClose, playingFile, togglePlay, audioRef }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  // Syncing with external audio object
+  useEffect(() => {
+    const audio = audioRef?.current;
+    if (!audio) return;
+    
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration);
+    
+    audio.addEventListener('timeupdate', updateTime);
+    audio.addEventListener('loadedmetadata', updateDuration);
+    // Explicit sync grab if it's already playing
+    setCurrentTime(audio.currentTime);
+    setDuration(audio.duration);
+    
+    return () => {
+      audio.removeEventListener('timeupdate', updateTime);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+    };
+  }, [audioRef]);
 
   useEffect(() => {
     if (!filename) return;
@@ -32,6 +54,36 @@ export default function FileHistoryModal({ filename, onClose }) {
           <p style={{fontFamily: 'monospace', wordBreak: 'break-all'}}>{filename}</p>
         </div>
         
+        <div style={{padding: '20px 30px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-color-tertiary)', display: 'flex', alignItems: 'center', gap: 15}}>
+           <button 
+             onClick={() => togglePlay(null, filename)} 
+             className={`play-btn ${playingFile === filename ? 'active' : ''}`}
+             style={{background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '50%', width: 45, height: 45, padding: 0}}
+           >
+             {playingFile === filename ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+           </button>
+           <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: 8}}>
+             <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500, fontFamily: 'monospace'}}>
+               <span>{Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')}</span>
+               <span>{isNaN(duration) ? '0:00' : `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}`}</span>
+             </div>
+             <input 
+               type="range" 
+               className="audio-scrubber"
+               min={0} 
+               max={duration || 100} 
+               value={currentTime} 
+               onChange={(e) => {
+                 if (audioRef.current) {
+                   audioRef.current.currentTime = parseFloat(e.target.value);
+                   setCurrentTime(parseFloat(e.target.value));
+                 }
+               }}
+               style={{width: '100%'}}
+             />
+           </div>
+        </div>
+
         <div className="modal-body" style={{overflowY: 'auto', flex: 1, padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: 30}}>
           {loading ? (
              <div style={{color: 'var(--text-secondary)'}}>Scanning database...</div>

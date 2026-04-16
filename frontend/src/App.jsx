@@ -53,12 +53,10 @@ function AppContent() {
   };
 
   const togglePlay = (e, filename) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (playingFile === filename) {
-      // Pause
       setPlayingFile(null);
     } else {
-      // Play
       setPlayingFile(filename);
     }
   };
@@ -138,7 +136,15 @@ function AppContent() {
       </main>
       
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
-      {viewingHistoryFile && <FileHistoryModal filename={viewingHistoryFile} onClose={() => setViewingHistoryFile(null)} />}
+      {viewingHistoryFile && (
+        <FileHistoryModal 
+          filename={viewingHistoryFile} 
+          onClose={() => setViewingHistoryFile(null)} 
+          playingFile={playingFile}
+          togglePlay={togglePlay}
+          audioRef={audioRef}
+        />
+      )}
       
       <audio ref={audioRef} onEnded={() => setPlayingFile(null)} style={{display: 'none'}} />
     </div>
