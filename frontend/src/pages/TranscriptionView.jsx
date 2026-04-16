@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Zap } from 'lucide-react';
 import { API_URL } from '../App';
 
@@ -35,6 +35,15 @@ export default function TranscriptionView({ selectedFiles }) {
   const [customPrompt, setCustomPrompt] = useState('You are an AI tasked with emotional analysis. Respond with EXACTLY ONE WORD from this list based on the transcript: DELIGHTED, SATISFIED, NEUTRAL, CONFUSED, FRUSTRATED, ANGRY, URGENT. Do not include any punctuation or extra words.');
   const [transcribing, setTranscribing] = useState(false);
   const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/system-prompt`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.prompt) setCustomPrompt(data.prompt);
+      })
+      .catch(err => console.error(err));
+  }, []);
 
   const handleProviderChange = (e) => {
     const newProv = e.target.value;

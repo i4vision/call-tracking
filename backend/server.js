@@ -193,6 +193,31 @@ const RATES = {
 
 const VALID_EMOTIONS = ['delighted', 'satisfied', 'neutral', 'confused', 'frustrated', 'angry', 'urgent'];
 
+// GET /api/system-prompt
+app.get('/api/system-prompt', async (req, res) => {
+  try {
+    const { data } = await supabase.from('ai_credentials').select('api_key').eq('provider', 'system_prompt');
+    if (data && data.length > 0) {
+      res.json({ prompt: data[0].api_key });
+    } else {
+      res.json({ prompt: EMOTION_SYSTEM_PROMPT });
+    }
+  } catch (error) {
+    res.json({ prompt: EMOTION_SYSTEM_PROMPT });
+  }
+});
+
+// POST /api/system-prompt
+app.post('/api/system-prompt', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    await supabase.from('ai_credentials').upsert([{ provider: 'system_prompt', api_key: prompt, updated_at: new Date().toISOString() }], { onConflict: 'provider' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update prompt' });
+  }
+});
+
 // POST /api/transcribe
 app.post('/api/transcribe', async (req, res) => {
   const { files, transcriberProvider, analyzerProvider, analyzerVersion, customPrompt } = req.body;

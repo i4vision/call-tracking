@@ -88,7 +88,7 @@ function AppContent() {
               className="nav-link"
               style={{background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center'}}
             >
-              <Settings size={16} style={{marginRight: 4}}/> API Keys
+              <Settings size={16} style={{marginRight: 4}}/> Settings
             </button>
           </div>
         </div>
