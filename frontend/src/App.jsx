@@ -69,7 +69,7 @@ function AppContent() {
     <div className="app-container">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h2><Headphones size={24} color="var(--accent-color)" /> OpenPhone AI</h2>
+          <h2 style={{display: 'flex', alignItems: 'center'}}><img src="/katia-logo.png" alt="Katia Logo" style={{height: 24, objectFit: 'contain', marginRight: 8}} /> Katia AI</h2>
           <div className="nav-links">
             <NavLink 
               to="/" 
