@@ -20,16 +20,22 @@ const supabaseKey = process.env.SUPABASE_KEY || 'placeholder_key';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // GET /api/files endpoint
-app.get('/api/files', (req, res) => {
+app.get('/api/files', async (req, res) => {
   try {
     if (!fs.existsSync(ARCHIVE_PATH)) {
       return res.status(404).json({ error: `Archive folder not found at ${ARCHIVE_PATH}`, files: [] });
     }
+    
+    // Fetch distinct filenames from DB to mark them as seamlessly translated
+    const { data: dbCalls } = await supabase.from('calls').select('filename');
+    const translatedSet = new Set(dbCalls ? dbCalls.map(c => c.filename) : []);
+
     const files = fs.readdirSync(ARCHIVE_PATH)
       .filter(f => f.toLowerCase().endsWith('.mp3'))
       .map((f, i) => ({
         id: `file-${i}`,
         filename: f,
+        translated: translatedSet.has(f),
         path: path.join(ARCHIVE_PATH, f)
       }));
     

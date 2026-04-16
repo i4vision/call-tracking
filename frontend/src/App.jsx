@@ -121,7 +121,9 @@ function AppContent() {
                   >
                     {playingFile === file.filename ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
                   </button>
-                  <span className="file-name" title={file.filename}>{file.filename}</span>
+                  <span className="file-name" title={file.filename} style={{color: file.translated ? 'var(--success-color)' : 'var(--text-secondary)'}}>
+                    {file.filename}
+                  </span>
               </div>
             ))
           )}
