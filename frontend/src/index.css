@@ -162,6 +162,26 @@ body {
   text-overflow: ellipsis;
 }
 
+.play-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.play-btn:hover {
+  color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+.play-btn.active {
+  color: var(--accent-color);
+}
+
 .main-content {
   flex: 1;
   display: flex;

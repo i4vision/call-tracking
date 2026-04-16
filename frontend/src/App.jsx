@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { Mic, BarChart2, Headphones, FileAudio, Settings } from 'lucide-react';
+import { Mic, BarChart2, Headphones, Play, Pause, Settings } from 'lucide-react';
 import TranscriptionView from './pages/TranscriptionView';
 import DashboardView from './pages/DashboardView';
 import SettingsModal from './components/SettingsModal';
@@ -15,7 +15,21 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewingHistoryFile, setViewingHistoryFile] = useState(null);
+  const [playingFile, setPlayingFile] = useState(null);
+  const audioRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (playingFile && audioRef.current) {
+      audioRef.current.src = `${API_URL}/audio/${encodeURIComponent(playingFile)}`;
+      audioRef.current.play().catch(e => {
+        console.error("Audio playback failed natively", e);
+        setPlayingFile(null);
+      });
+    } else if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [playingFile]);
 
   useEffect(() => {
     fetch(`${API_URL}/files`)
@@ -36,6 +50,17 @@ function AppContent() {
     else newSel.add(id);
     setSelectedFileIds(newSel);
     navigate('/');
+  };
+
+  const togglePlay = (e, filename) => {
+    e.stopPropagation();
+    if (playingFile === filename) {
+      // Pause
+      setPlayingFile(null);
+    } else {
+      // Play
+      setPlayingFile(filename);
+    }
   };
 
   const getSelectedFiles = () => {
@@ -91,8 +116,14 @@ function AppContent() {
                   onChange={() => toggleFile(file.id)}
                   onClick={(e) => e.stopPropagation()}
                 />
-                <FileAudio size={18} className="file-icon" />
-                <span className="file-name" title={file.filename}>{file.filename}</span>
+                  <button 
+                    onClick={(e) => togglePlay(e, file.filename)} 
+                    className={`play-btn ${playingFile === file.filename ? 'active' : ''}`}
+                    title="Play Audio"
+                  >
+                    {playingFile === file.filename ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+                  </button>
+                  <span className="file-name" title={file.filename}>{file.filename}</span>
               </div>
             ))
           )}
@@ -108,6 +139,8 @@ function AppContent() {
       
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
       {viewingHistoryFile && <FileHistoryModal filename={viewingHistoryFile} onClose={() => setViewingHistoryFile(null)} />}
+      
+      <audio ref={audioRef} onEnded={() => setPlayingFile(null)} style={{display: 'none'}} />
     </div>
   );
 }

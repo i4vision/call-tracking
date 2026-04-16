@@ -40,6 +40,16 @@ app.get('/api/files', (req, res) => {
   }
 });
 
+// GET /api/audio/:filename - Stream audio directly manually
+app.get('/api/audio/:filename', (req, res) => {
+  const filePath = path.join(ARCHIVE_PATH, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ error: 'Audio file not physically found' });
+  }
+});
+
 // GET /api/credentials
 app.get('/api/credentials', async (req, res) => {
   try {
