@@ -119,6 +119,27 @@ const transcribeWithWhisper = async (filePath, key, provider) => {
   return response.data;
 };
 
+const transcribeWithGoogle = async (filePath, key) => {
+  try {
+    const audioData = fs.readFileSync(filePath).toString("base64");
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+    const payload = {
+      contents: [{
+        parts: [
+          { inline_data: { mime_type: "audio/mp3", data: audioData } },
+          { text: "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else." }
+        ]
+      }]
+    };
+    const response = await axios.post(url, payload, { headers: { 'Content-Type': 'application/json' } });
+    const text = response.data.candidates[0].content.parts[0].text;
+    return { text };
+  } catch (error) {
+    console.error("Google Gemini Transcription Error:", error.response ? error.response.data : error.message);
+    throw new Error('Google Transcription failed at API layer');
+  }
+};
+
 const EMOTION_SYSTEM_PROMPT = 'You are an AI tasked with emotional analysis. Respond with EXACTLY ONE WORD from this list based on the transcript: DELIGHTED, SATISFIED, NEUTRAL, CONFUSED, FRUSTRATED, ANGRY, URGENT. Do not include any punctuation or extra words.';
 
 const analyzeEmotionOpenAIFormat = async (transcript, model, apiKey, systemPrompt, baseUrl="https://api.openai.com/v1/chat/completions") => {
@@ -187,13 +208,18 @@ const analyzeEmotionGoogle = async (transcript, model, apiKey, systemPrompt) => 
 const DEFAULT_RATES = { input: 0.50 / 1000000, output: 0.50 / 1000000 };
 
 const RATES = {
-  transcribe: { 'openai': 0.006, 'groq': 0.0005 },
+  transcribe: {
+    'openai': 0.006, // per minute
+    'groq': 0.001,
+    'google': 0.001 // gemini audio estimate roughly per minute
+  },
   analyzer: {
-    'openai': { input: 5.00 / 1000000, output: 15.00 / 1000000 },
+    'openai': { input: 5.00 / 1000000, output: 15.00 / 1000000 }, // gpt-4o proxy
     'anthropic': { input: 3.00 / 1000000, output: 15.00 / 1000000 },
     'google': { input: 3.50 / 1000000, output: 10.50 / 1000000 },
     'mistral': { input: 2.00 / 1000000, output: 6.00 / 1000000 },
-    'groq': { input: 0.59 / 1000000, output: 0.79 / 1000000 }
+    'groq': { input: 0.59 / 1000000, output: 0.79 / 1000000 },
+    'xai': { input: 5.00 / 1000000, output: 15.00 / 1000000 }
   }
 };
 
@@ -255,8 +281,14 @@ app.post('/api/transcribe', async (req, res) => {
       let totalCost = (RATES.transcribe[transcriberProvider] || 0) * minutes;
 
       // 3. Transcription Network Call
-      const transRes = await transcribeWithWhisper(filePath, transcriberKey, transcriberProvider);
-      const transcriptText = transRes.text;
+      let transcriptText = "";
+      if (transcriberProvider === 'google') {
+        const transRes = await transcribeWithGoogle(filePath, transcriberKey);
+        transcriptText = transRes.text;
+      } else {
+        const transRes = await transcribeWithWhisper(filePath, transcriberKey, transcriberProvider);
+        transcriptText = transRes.text;
+      }
 
       // 4. Analysis Network Call
       let emotion = 'neutral';
@@ -277,6 +309,9 @@ app.post('/api/transcribe', async (req, res) => {
         emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       } else if (analyzerProvider === 'groq') {
         const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, activePrompt, 'https://api.groq.com/openai/v1/chat/completions');
+        emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
+      } else if (analyzerProvider === 'xai') {
+        const rez = await analyzeEmotionOpenAIFormat(transcriptText, analyzerVersion, analyzerKey, activePrompt, 'https://api.x.ai/v1/chat/completions');
         emotion = rez.emotion; inputToks = rez.input_tokens; outputToks = rez.output_tokens;
       }
 

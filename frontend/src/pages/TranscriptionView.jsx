@@ -25,6 +25,10 @@ const ANALYZER_OPTIONS = {
   mistral: [
     { value: 'mistral-large-latest', label: 'Mistral Large' },
     { value: 'open-mixtral-8x22b', label: 'Mixtral 8x22B' }
+  ],
+  xai: [
+    { value: 'grok-2-latest', label: 'Grok 2' },
+    { value: 'grok-vision-latest', label: 'Grok Vision' }
   ]
 };
 
@@ -103,6 +107,7 @@ export default function TranscriptionView({ selectedFiles }) {
           <select value={transcriberProvider} onChange={e => setTranscriberProvider(e.target.value)}>
             <option value="openai">OpenAI Whisper v3</option>
             <option value="groq">Groq Whisper (Ultra-fast)</option>
+            <option value="google">Google Gemini Audio</option>
           </select>
         </div>
 
@@ -114,6 +119,7 @@ export default function TranscriptionView({ selectedFiles }) {
             <option value="google">Google Gemini</option>
             <option value="groq">Groq (Meta Llama)</option>
             <option value="mistral">Mistral API</option>
+            <option value="xai">xAI (Grok)</option>
           </select>
         </div>
 
