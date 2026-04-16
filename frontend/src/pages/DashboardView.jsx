@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Smile, Frown, Meh, AlertTriangle, Zap, CheckCircle, BarChart } from 'lucide-react';
+import { Activity, Smile, Frown, Meh, AlertTriangle, Zap, CheckCircle, BarChart, ChevronRight, ChevronDown } from 'lucide-react';
 import { API_URL } from '../App';
 import CallDetailsModal from '../components/CallDetailsModal';
 
@@ -9,6 +9,7 @@ export default function DashboardView() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(null);
   const [selectedCall, setSelectedCall] = useState(null);
+  const [expandedRows, setExpandedRows] = useState(new Set());
 
   useEffect(() => {
     fetch(`${API_URL}/dashboard`)
@@ -107,20 +108,84 @@ export default function DashboardView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {recent.filter(c => !filter || c.emotion === filter).map(call => {
-                      const cColor = getMeta(call.emotion).color;
-                      return (
-                        <tr key={call.id} style={{borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background-color 0.2s'}} onClick={() => setSelectedCall(call)} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-color-tertiary)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                          <td style={{padding: '15px 20px', fontFamily: 'monospace'}}>{call.filename}</td>
-                          <td style={{padding: '15px 20px', color: 'var(--text-secondary)', fontSize: '0.85rem'}}>{new Date(call.created_at).toLocaleString()}</td>
-                          <td style={{padding: '15px 20px'}}><span className="badge badge-ai" style={{background: 'rgba(255,255,255,0.05)', color: '#8b949e', border: '1px solid #30363d'}}>{call.ai_version.replace(' | ', ' ⚙️ ')}</span></td>
-                          <td style={{padding: '15px 20px', color: 'var(--success-color)'}}>${Number(call.cost_transcribe || 0).toFixed(4)}</td>
-                          <td style={{padding: '15px 20px', color: 'var(--accent-color)'}}>${Number(call.cost_analyze || 0).toFixed(4)}</td>
-                          <td style={{padding: '15px 20px', color: 'var(--text-primary)'}}>{Number(call.processing_time || 0).toFixed(1)}s</td>
-                          <td style={{padding: '15px 20px'}}><span className={`badge`} style={{background: `${cColor}15`, color: cColor, border: `1px solid ${cColor}40`}}>{call.emotion.toUpperCase()}</span></td>
-                        </tr>
-                      )
-                    })}
+                    {(() => {
+                      const filteredCalls = recent.filter(c => !filter || c.emotion === filter);
+                      const groupsMap = new Map();
+                      filteredCalls.forEach(call => {
+                        if (!groupsMap.has(call.filename)) groupsMap.set(call.filename, []);
+                        groupsMap.get(call.filename).push(call);
+                      });
+                      const groupedCallsArray = Array.from(groupsMap.values());
+
+                      const toggleRow = (filename, e) => {
+                        if (e) e.stopPropagation();
+                        const next = new Set(expandedRows);
+                        if (next.has(filename)) next.delete(filename);
+                        else next.add(filename);
+                        setExpandedRows(next);
+                      };
+
+                      return groupedCallsArray.map((group, idx) => {
+                        const parentCall = group[0];
+                        const hasChildren = group.length > 1;
+                        const isExpanded = expandedRows.has(parentCall.filename);
+                        const cColor = getMeta(parentCall.emotion).color;
+
+                        return (
+                          <React.Fragment key={`group-${idx}`}>
+                            <tr 
+                              className="dashboard-row" 
+                              style={{borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background-color 0.2s', background: isExpanded ? 'var(--bg-color-secondary)' : 'transparent'}} 
+                              onClick={() => hasChildren ? toggleRow(parentCall.filename) : setSelectedCall(parentCall)}
+                              onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-color-tertiary)'} 
+                              onMouseLeave={e => e.currentTarget.style.backgroundColor = isExpanded ? 'var(--bg-color-secondary)' : 'transparent'}
+                            >
+                              <td style={{padding: '15px 20px', fontFamily: 'monospace', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8}}>
+                                {hasChildren && (
+                                  <button onClick={(e) => toggleRow(parentCall.filename, e)} style={{background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center'}}>
+                                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                  </button>
+                                )}
+                                {!hasChildren && <div style={{width: 16}}></div>}
+                                <span>{parentCall.filename}</span>
+                                {hasChildren && <span style={{fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: 4, color: 'var(--text-secondary)', marginLeft: 8}}>{group.length} Transcripts</span>}
+                              </td>
+                              <td style={{padding: '15px 20px', color: 'var(--text-secondary)', fontSize: '0.85rem'}}>{new Date(parentCall.created_at).toLocaleString()}</td>
+                              <td style={{padding: '15px 20px'}}><span className="badge badge-ai" style={{background: 'rgba(255,255,255,0.05)', color: '#8b949e', border: '1px solid #30363d'}}>{parentCall.ai_version.replace(' | ', ' ⚙️ ')}</span></td>
+                              <td style={{padding: '15px 20px', color: 'var(--success-color)'}}>${Number(parentCall.cost_transcribe || 0).toFixed(4)}</td>
+                              <td style={{padding: '15px 20px', color: 'var(--accent-color)'}}>${Number(parentCall.cost_analyze || 0).toFixed(4)}</td>
+                              <td style={{padding: '15px 20px', color: 'var(--text-primary)'}}>{Number(parentCall.processing_time || 0).toFixed(1)}s</td>
+                              <td style={{padding: '15px 20px'}}><span className={`badge`} style={{background: `${cColor}15`, color: cColor, border: `1px solid ${cColor}40`}}>{parentCall.emotion.toUpperCase()}</span></td>
+                            </tr>
+                            
+                            {isExpanded && group.slice(1).map((childCall, childIdx) => {
+                              const childColor = getMeta(childCall.emotion).color;
+                              return (
+                                <tr 
+                                  key={`child-${idx}-${childIdx}`} 
+                                  style={{background: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)', cursor: 'pointer'}} 
+                                  onClick={() => setSelectedCall(childCall)}
+                                  onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-color-tertiary)'} 
+                                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'var(--bg-color)'}
+                                >
+                                  <td style={{padding: '12px 20px', paddingLeft: 55, fontFamily: 'monospace', fontSize: '0.8rem'}}>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)'}}>
+                                      ↳ Version {group.length - childIdx}
+                                    </div>
+                                  </td>
+                                  <td style={{padding: '12px 20px', color: 'var(--text-secondary)', fontSize: '0.85rem'}}>{new Date(childCall.created_at).toLocaleString()}</td>
+                                  <td style={{padding: '12px 20px'}}><span className="badge badge-ai" style={{background: 'rgba(255,255,255,0.02)', color: '#8b949e', border: '1px solid #30363d', fontSize: '0.7rem'}}>{childCall.ai_version.replace(' | ', ' ⚙️ ')}</span></td>
+                                  <td style={{padding: '12px 20px', color: 'var(--success-color)'}}>${Number(childCall.cost_transcribe || 0).toFixed(4)}</td>
+                                  <td style={{padding: '12px 20px', color: 'var(--accent-color)'}}>${Number(childCall.cost_analyze || 0).toFixed(4)}</td>
+                                  <td style={{padding: '12px 20px', color: 'var(--text-primary)'}}>{Number(childCall.processing_time || 0).toFixed(1)}s</td>
+                                  <td style={{padding: '12px 20px'}}><span className={`badge`} style={{background: `${childColor}15`, color: childColor, border: `1px solid ${childColor}40`, fontSize: '0.7rem'}}>{childCall.emotion.toUpperCase()}</span></td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               )}
