@@ -70,8 +70,7 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
               type="text" 
               value={newFilename} 
               onChange={(e) => setNewFilename(e.target.value)}
-              className="settings-select"
-              style={{ flex: 1, padding: '10px', cursor: 'text' }}
+              style={{ flex: 1, padding: '10px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, cursor: 'text', fontFamily: 'inherit' }}
             />
             <span style={{ color: 'var(--text-secondary)' }}>.mp3</span>
           </div>
@@ -82,25 +81,26 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
           <textarea 
             value={notes} 
             onChange={(e) => setNotes(e.target.value)}
-            className="settings-textarea"
-            style={{ width: '100%', minHeight: '120px', padding: '10px', resize: 'vertical' }}
+            style={{ width: '100%', minHeight: '120px', padding: '10px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, resize: 'vertical', fontFamily: 'inherit' }}
             placeholder="Add specific context, customer flags, or behavioral markers here..."
           />
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button 
-            className="btn btn-secondary" 
             onClick={onClose} 
             disabled={isSaving}
+            style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '8px 16px', borderRadius: 4, cursor: 'pointer', transition: 'background 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-color-tertiary)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             Cancel
           </button>
           <button 
-            className="btn btn-primary" 
+            className="btn-primary" 
             onClick={handleSave} 
             disabled={isSaving || !newFilename.trim()}
-            style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 4, cursor: 'pointer', border: 'none', background: 'var(--accent-color)', color: '#fff' }}
           >
             <Save size={16} /> {isSaving ? 'Saving...' : 'Save Updates'}
           </button>

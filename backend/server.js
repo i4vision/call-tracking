@@ -46,7 +46,9 @@ app.get('/api/files', async (req, res) => {
     const translatedSet = new Set(dbCalls ? dbCalls.map(c => c.filename) : []);
 
     // Fetch arbitrary string attachments linked exclusively to physical binaries
-    const { data: dbMeta } = await supabase.from('file_metadata').select('filename, notes');
+    const { data: dbMeta, error: metaErr } = await supabase.from('file_metadata').select('filename, notes');
+    if (metaErr) console.error("Supabase Metadata Table Miss:", metaErr.message);
+
     const notesMap = new Map();
     if (dbMeta) {
       dbMeta.forEach(m => notesMap.set(m.filename, m.notes));
@@ -86,17 +88,20 @@ app.put('/api/files/metadata', async (req, res) => {
       fs.renameSync(oldPath, newPath);
 
       // Step 2: Cascade update seamlessly into transcription records matrix backwards inherently
-      await supabase.from('calls').update({ filename: newFilename }).eq('filename', oldFilename);
+      const { error: cascadeErr } = await supabase.from('calls').update({ filename: newFilename }).eq('filename', oldFilename);
+      if (cascadeErr) throw new Error(cascadeErr.message);
       
       // Step 3: Delete exact historical tracker since PK structure changes
-      await supabase.from('file_metadata').delete().eq('filename', oldFilename);
+      const { error: delErr } = await supabase.from('file_metadata').delete().eq('filename', oldFilename);
+      if (delErr) throw new Error(delErr.message);
     }
 
     // Step 4: Structurally bind Notes array mappings via direct upsert natively
-    await supabase.from('file_metadata').upsert({
+    const { error: upsertErr } = await supabase.from('file_metadata').upsert({
       filename: newFilename,
       notes: notes || ''
     });
+    if (upsertErr) throw new Error(upsertErr.message);
 
     res.json({ success: true });
   } catch (err) {
