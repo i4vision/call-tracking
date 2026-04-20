@@ -231,8 +231,9 @@ const transcribeWithGoogle = async (filePath, key, prompt) => {
     const text = response.data.candidates[0].content.parts[0].text;
     return { text };
   } catch (error) {
-    console.error("Google Gemini Transcription Error:", error.response ? error.response.data : error.message);
-    throw new Error('Google Transcription failed at API layer');
+    console.error("Google Gemini Transcription Error:", error.response ? JSON.stringify(error.response.data) : error.message);
+    const msg = error.response?.data?.error?.message || error.message;
+    throw new Error(`Google API Fault: ${msg}`);
   }
 };
 
