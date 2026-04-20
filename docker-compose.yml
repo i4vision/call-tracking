@@ -9,7 +9,7 @@ services:
       - "19432:8080"
     volumes:
       # Use a Docker named volume that connects to the Windows share
-      - archive_data_v2:/archive:ro
+      - archive_data_v2:/archive:rw
     environment:
       - ARCHIVE_PATH=/archive
     env_file:
