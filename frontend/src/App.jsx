@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { Mic, BarChart2, Headphones, Play, Pause, Settings } from 'lucide-react';
+import { Mic, BarChart2, Headphones, Play, Pause, Settings, UploadCloud } from 'lucide-react';
 import TranscriptionView from './pages/TranscriptionView';
 import DashboardView from './pages/DashboardView';
 import SettingsModal from './components/SettingsModal';
@@ -13,8 +13,10 @@ function AppContent() {
   const [files, setFiles] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewingHistoryFile, setViewingHistoryFile] = useState(null);
+  const fileInputRef = useRef(null);
   const [playingFile, setPlayingFile] = useState(null);
   const audioRef = useRef(null);
   const navigate = useNavigate();
@@ -31,7 +33,7 @@ function AppContent() {
     }
   }, [playingFile]);
 
-  useEffect(() => {
+  const fetchFiles = () => {
     fetch(`${API_URL}/files`)
       .then(res => res.json())
       .then(data => {
@@ -42,7 +44,33 @@ function AppContent() {
         console.error('Failed to fetch files', err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchFiles();
   }, []);
+
+  const handleFileUpload = async (event) => {
+    const uploadedFiles = event.target.files;
+    if (!uploadedFiles || uploadedFiles.length === 0) return;
+    
+    setIsUploading(true);
+    for (let i = 0; i < uploadedFiles.length; i++) {
+       const formData = new FormData();
+       formData.append('audio', uploadedFiles[i]);
+       try {
+         await fetch(`${API_URL}/upload`, {
+           method: 'POST',
+           body: formData
+         });
+       } catch (err) {
+         console.error("Upload failed", err);
+       }
+    }
+    fetchFiles();
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const toggleFile = (id) => {
     const newSel = new Set(selectedFileIds);
@@ -94,9 +122,19 @@ function AppContent() {
         </div>
         
         <div className="file-list">
-          <h3 style={{fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '10px 12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
-            Recordings ({files.length})
-          </h3>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 12}}>
+            <h3 style={{fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '10px 12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
+              Recordings ({files.length})
+            </h3>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              style={{background: 'transparent', border: 'none', color: isUploading ? 'var(--accent-color)' : 'var(--text-secondary)', cursor: 'pointer', transition: 'color 0.2s', display: 'flex', alignItems: 'center'}}
+              title="Upload Native Audio"
+            >
+              <UploadCloud size={16} style={{opacity: isUploading ? 0.6 : 1}} />
+            </button>
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="audio/*" multiple hidden />
+          </div>
           {loading ? (
             <div style={{padding: 12, color: 'var(--text-secondary)'}}>Loading...</div>
           ) : files.length === 0 ? (

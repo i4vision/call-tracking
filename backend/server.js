@@ -5,6 +5,7 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const FormData = require('form-data');
+const multer = require('multer');
 require('dotenv').config();
 
 const app = express();
@@ -13,6 +14,20 @@ const ARCHIVE_PATH = process.env.ARCHIVE_PATH || 'C:\\OpenPhoneArchive';
 
 app.use(cors());
 app.use(express.json());
+
+// Disk Storage mapping securely to Docker Volumes
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    if (!fs.existsSync(ARCHIVE_PATH)) {
+      fs.mkdirSync(ARCHIVE_PATH, { recursive: true });
+    }
+    cb(null, ARCHIVE_PATH);
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
+const upload = multer({ storage: storage });
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -54,6 +69,14 @@ app.get('/api/audio/:filename', (req, res) => {
   } else {
     res.status(404).json({ error: 'Audio file not physically found' });
   }
+});
+
+// POST /api/upload - Handle manual system uploads
+app.post('/api/upload', upload.single('audio'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No physical file payload extracted' });
+  }
+  res.json({ message: 'File streamed successfully', filename: req.file.originalname });
 });
 
 // GET /api/credentials
