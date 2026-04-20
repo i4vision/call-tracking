@@ -9,6 +9,7 @@ export default function SettingsModal({ onClose }) {
   const [saved, setSaved] = useState(false);
   
   const [prompt, setPrompt] = useState('');
+  const [transcribePrompt, setTranscribePrompt] = useState('');
   const [savingPrompt, setSavingPrompt] = useState(false);
   const [savedPrompt, setSavedPrompt] = useState(false);
   
@@ -26,6 +27,7 @@ export default function SettingsModal({ onClose }) {
       .then(res => res.json())
       .then(data => {
          if (data.prompt) setPrompt(data.prompt);
+         if (data.transcribePrompt) setTranscribePrompt(data.transcribePrompt);
       })
       .catch(err => console.error(err));
   }, []);
@@ -57,7 +59,7 @@ export default function SettingsModal({ onClose }) {
       await fetch(`${API_URL}/system-prompt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ prompt, transcribePrompt })
       });
       setSavedPrompt(true);
       setTimeout(() => setSavedPrompt(false), 2000);
@@ -118,7 +120,18 @@ export default function SettingsModal({ onClose }) {
           <h3 style={{marginBottom: 15, fontSize: '1rem'}}>AI Analysis Preferences</h3>
           
           <div className="select-group" style={{flexBasis: '100%', marginBottom: 20}}>
-            <label>Default Emotion System Prompt</label>
+            <label>Transcription Output Formatting Prompt (Word-for-Word generation overrides)</label>
+            <textarea 
+              className="ai-prompt-textarea"
+              style={{height: 70}}
+              value={transcribePrompt} 
+              onChange={e => setTranscribePrompt(e.target.value)}
+              placeholder="e.g. Generate highly accurate, word-for-word transcript. Format brand names correctly: Katia AI, Acme Corp."
+            />
+          </div>
+
+          <div className="select-group" style={{flexBasis: '100%', marginBottom: 20}}>
+            <label>Emotion System Analysis Prompt</label>
             <textarea 
               className="ai-prompt-textarea"
               style={{height: 100}}

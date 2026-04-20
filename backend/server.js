@@ -190,9 +190,12 @@ const getAudioDuration = async (filePath) => {
   }
 };
 
-const transcribeWithWhisper = async (filePath, key, provider) => {
+const transcribeWithWhisper = async (filePath, key, provider, prompt) => {
   const formData = new FormData();
   formData.append('file', fs.createReadStream(filePath));
+  if (prompt && prompt.trim() !== '') {
+    formData.append('prompt', prompt);
+  }
 
   let url;
   if (provider === 'groq') {
@@ -212,7 +215,7 @@ const transcribeWithWhisper = async (filePath, key, provider) => {
   return response.data;
 };
 
-const transcribeWithGoogle = async (filePath, key) => {
+const transcribeWithGoogle = async (filePath, key, prompt) => {
   try {
     const audioData = fs.readFileSync(filePath).toString("base64");
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
@@ -220,7 +223,7 @@ const transcribeWithGoogle = async (filePath, key) => {
       contents: [{
         parts: [
           { inline_data: { mime_type: "audio/mp3", data: audioData } },
-          { text: "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else." }
+          { text: prompt || "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else." }
         ]
       }]
     };
@@ -321,25 +324,34 @@ const VALID_EMOTIONS = ['delighted', 'satisfied', 'neutral', 'confused', 'frustr
 // GET /api/system-prompt
 app.get('/api/system-prompt', async (req, res) => {
   try {
-    const { data } = await supabase.from('ai_credentials').select('api_key').eq('provider', 'system_prompt');
+    const { data } = await supabase.from('ai_credentials').select('provider, api_key').in('provider', ['system_prompt', 'transcribe_prompt']);
+    let prompt = EMOTION_SYSTEM_PROMPT;
+    let transcribePrompt = "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else.";
+    
     if (data && data.length > 0) {
-      res.json({ prompt: data[0].api_key });
-    } else {
-      res.json({ prompt: EMOTION_SYSTEM_PROMPT });
+      const p1 = data.find(c => c.provider === 'system_prompt');
+      if (p1) prompt = p1.api_key;
+      const p2 = data.find(c => c.provider === 'transcribe_prompt');
+      if (p2) transcribePrompt = p2.api_key;
     }
+    
+    res.json({ prompt, transcribePrompt });
   } catch (error) {
-    res.json({ prompt: EMOTION_SYSTEM_PROMPT });
+    res.json({ prompt: EMOTION_SYSTEM_PROMPT, transcribePrompt: "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript." });
   }
 });
 
 // POST /api/system-prompt
 app.post('/api/system-prompt', async (req, res) => {
   try {
-    const { prompt } = req.body;
-    await supabase.from('ai_credentials').upsert([{ provider: 'system_prompt', api_key: prompt, updated_at: new Date().toISOString() }], { onConflict: 'provider' });
+    const { prompt, transcribePrompt } = req.body;
+    await supabase.from('ai_credentials').upsert([
+      { provider: 'system_prompt', api_key: prompt, updated_at: new Date().toISOString() },
+      { provider: 'transcribe_prompt', api_key: transcribePrompt, updated_at: new Date().toISOString() }
+    ], { onConflict: 'provider' });
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update prompt' });
+    res.status(500).json({ error: 'Failed to update prompt mappings' });
   }
 });
 
@@ -361,6 +373,9 @@ app.post('/api/transcribe', async (req, res) => {
   if (!transcriberKey) return res.status(403).json({ error: `Missing API Key for Transcriber: ${transcriberProvider}` });
   if (!analyzerKey) return res.status(403).json({ error: `Missing API Key for Analyzer: ${analyzerProvider}` });
 
+  const dbTranscribePrompt = creds.find(c => c.provider === 'transcribe_prompt')?.api_key;
+  const customTranscribePrompt = dbTranscribePrompt || "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else.";
+
   const results = [];
 
   for (const file of files) {
@@ -376,10 +391,10 @@ app.post('/api/transcribe', async (req, res) => {
       // 3. Transcription Network Call
       let transcriptText = "";
       if (transcriberProvider === 'google') {
-        const transRes = await transcribeWithGoogle(filePath, transcriberKey);
+        const transRes = await transcribeWithGoogle(filePath, transcriberKey, customTranscribePrompt);
         transcriptText = transRes.text;
       } else {
-        const transRes = await transcribeWithWhisper(filePath, transcriberKey, transcriberProvider);
+        const transRes = await transcribeWithWhisper(filePath, transcriberKey, transcriberProvider, customTranscribePrompt);
         transcriptText = transRes.text;
       }
 
