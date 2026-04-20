@@ -519,8 +519,30 @@ app.get('/api/calls/:filename', async (req, res) => {
     if (error) throw error;
     res.json(calls || []);
   } catch (error) {
-    console.error('Error fetching file history:', error);
-    res.status(500).json({ error: 'Failed to access database' });
+    console.error('File Check Error:', error);
+    res.status(500).json({ error: 'Failed to access physical directory bounds' });
+  }
+});
+
+// DELETE /api/files/:filename
+app.delete('/api/files/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    if (!filename) return res.status(400).json({ error: 'Missing targeting string' });
+
+    const filePath = path.join(ARCHIVE_PATH, filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // Cascade deletions on database hooks
+    await supabase.from('calls').delete().eq('filename', filename);
+    await supabase.from('file_metadata').delete().eq('filename', filename);
+
+    res.json({ success: true, message: 'Physical and logical bounds completely wiped' });
+  } catch (err) {
+    console.error('Deletion Exception:', err);
+    res.status(500).json({ error: 'Failed executing exact physical unlinking', details: err.message });
   }
 });
 

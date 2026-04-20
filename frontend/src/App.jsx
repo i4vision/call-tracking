@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { Mic, BarChart2, Headphones, Play, Pause, Settings, UploadCloud, Edit2 } from 'lucide-react';
+import { Mic, BarChart2, Headphones, Play, Pause, Settings, UploadCloud, Edit2, Trash2 } from 'lucide-react';
 import TranscriptionView from './pages/TranscriptionView';
 import DashboardView from './pages/DashboardView';
 import SettingsModal from './components/SettingsModal';
@@ -95,6 +95,28 @@ function AppContent() {
     return files.filter(f => selectedFileIds.has(f.id));
   };
 
+  const handleDeleteFile = async (e, filename) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you absolutely sure you want to delete ${filename}? This natively destroys the physical audio track and wipes all underlying transcription mappings.`)) {
+      try {
+        const response = await fetch(`${API_URL}/files/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+        if (response.ok) {
+           setSelectedFileIds(prev => {
+             const newSet = new Set(prev);
+             // Find ID and wipe it from bounds
+             const target = files.find(f => f.filename === filename);
+             if (target) newSet.delete(target.id);
+             return newSet;
+           });
+           if (playingFile === filename) setPlayingFile(null);
+           fetchFiles();
+        }
+      } catch (err) {
+        console.error("Deletion API failed", err);
+      }
+    }
+  };
+
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -163,12 +185,21 @@ function AppContent() {
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); setEditingFile(file); }} 
-                    style={{background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', transition: 'color 0.2s'}}
+                    style={{background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', transition: 'color 0.2s', marginRight: 4}}
                     title="Edit Audio Mapping"
                     onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-color)'}
                     onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
                   >
                     <Edit2 size={16} />
+                  </button>
+                  <button 
+                    onClick={(e) => handleDeleteFile(e, file.filename)} 
+                    style={{background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', transition: 'color 0.2s'}}
+                    title="Delete Audio & Data"
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--error-color)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                  >
+                    <Trash2 size={16} />
                   </button>
                   <span className="file-name" title={file.filename} style={{color: file.translated ? 'var(--success-color)' : 'var(--text-secondary)'}}>
                     {file.filename} {file.notes && <span style={{fontSize: '0.65rem', padding: '0 4px', background: 'rgba(255,255,255,0.1)', borderRadius: 3, verticalAlign: 'middle', marginLeft: 4}}>📝</span>}
