@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
 import { API_URL } from '../App';
 
-export default function EditMetadataModal({ file, onClose, onSaved }) {
+export default function EditMetadataModal({ file, uniqueTags = [], onClose, onSaved }) {
   const [newFilename, setNewFilename] = useState('');
   const [newNote, setNewNote] = useState('');
   const [historyNotes, setHistoryNotes] = useState([]);
   const [tags, setTags] = useState([]);
   const [newTagInput, setNewTagInput] = useState('');
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -97,21 +98,59 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
             ))}
             {tags.length === 0 && <span style={{fontSize: '0.75rem', color: 'var(--text-secondary)'}}>No tags attached.</span>}
           </div>
-          <input 
-            type="text" 
-            value={newTagInput} 
-            onChange={(e) => setNewTagInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newTagInput.trim()) {
-                e.preventDefault();
-                const processed = newTagInput.trim().toLowerCase();
-                if (!tags.includes(processed)) setTags([...tags, processed]);
-                setNewTagInput('');
-              }
-            }}
-            style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, cursor: 'text', fontFamily: 'inherit', fontSize: '0.85rem' }}
-            placeholder="Type a custom tag and hit Enter..."
-          />
+          
+          <div style={{ position: 'relative' }}>
+            <input 
+              type="text" 
+              value={newTagInput} 
+              onChange={(e) => { setNewTagInput(e.target.value); setShowTagDropdown(true); }}
+              onFocus={() => setShowTagDropdown(true)}
+              onBlur={() => setTimeout(() => setShowTagDropdown(false), 200)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTagInput.trim()) {
+                  e.preventDefault();
+                  const processed = newTagInput.trim().toLowerCase();
+                  if (!tags.includes(processed)) setTags([...tags, processed]);
+                  setNewTagInput('');
+                  setShowTagDropdown(false);
+                }
+              }}
+              style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, cursor: 'text', fontFamily: 'inherit', fontSize: '0.85rem' }}
+              placeholder="Select an existing tag or type a new one..."
+            />
+            {showTagDropdown && (
+              <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-color)', border: '1px solid var(--border-color)', margin: 0, padding: 0, listStyle: 'none', zIndex: 10, maxHeight: 150, overflowY: 'auto', borderRadius: '0 0 4px 4px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                {uniqueTags.filter(t => !tags.includes(t) && t.toLowerCase().includes(newTagInput.toLowerCase())).length > 0 ? (
+                  uniqueTags.filter(t => !tags.includes(t) && t.toLowerCase().includes(newTagInput.toLowerCase())).map(t => (
+                    <li 
+                      key={t}
+                      onClick={() => { setTags([...tags, t]); setNewTagInput(''); setShowTagDropdown(false); }}
+                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-color-tertiary)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {t}
+                    </li>
+                  ))
+                ) : (
+                  newTagInput.trim() ? (
+                    <li 
+                      onClick={() => { setTags([...tags, newTagInput.trim().toLowerCase()]); setNewTagInput(''); setShowTagDropdown(false); }}
+                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--accent-color)', fontWeight: 500 }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-color-tertiary)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      + Create new tag: "{newTagInput.trim().toLowerCase()}"
+                    </li>
+                  ) : (
+                    <li style={{ padding: '8px 12px', fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                      No available tags match. Type to create.
+                    </li>
+                  )
+                )}
+              </ul>
+            )}
+          </div>
         </div>
 
         <div style={{ marginBottom: 20 }}>

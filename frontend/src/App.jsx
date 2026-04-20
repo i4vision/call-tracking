@@ -238,6 +238,7 @@ function AppContent() {
       {editingFile && (
         <EditMetadataModal 
           file={editingFile} 
+          uniqueTags={uniqueTags}
           onClose={() => setEditingFile(null)} 
           onSaved={fetchFiles} 
         />
