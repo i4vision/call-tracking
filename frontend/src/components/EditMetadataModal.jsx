@@ -6,6 +6,8 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
   const [newFilename, setNewFilename] = useState('');
   const [newNote, setNewNote] = useState('');
   const [historyNotes, setHistoryNotes] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [newTagInput, setNewTagInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -17,6 +19,8 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
       } catch(e) {
          setHistoryNotes(file.notes ? [{ id: 'legacy', date: new Date().toISOString(), text: file.notes }] : []);
       }
+      setTags(file.tags || []);
+      setNewTagInput('');
       setNewNote('');
     }
   }, [file]);
@@ -36,7 +40,8 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
         body: JSON.stringify({
           oldFilename: file.filename,
           newFilename: constructedName,
-          notes: newNote
+          notes: newNote,
+          tags: tags
         })
       });
 
@@ -78,8 +83,35 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
               onChange={(e) => setNewFilename(e.target.value)}
               style={{ flex: 1, padding: '10px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, cursor: 'text', fontFamily: 'inherit' }}
             />
-            <span style={{ color: 'var(--text-secondary)' }}>.mp3</span>
+             <span style={{ color: 'var(--text-secondary)' }}>.mp3</span>
           </div>
+        </div>
+
+        <div style={{ marginBottom: 15 }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 5 }}>Custom Tags</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+            {tags.map(tag => (
+              <span key={tag} style={{ background: 'rgba(0, 150, 255, 0.2)', border: '1px solid var(--accent-color)', color: 'var(--text-primary)', fontSize: '0.75rem', padding: '4px 8px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {tag} <X size={12} style={{ cursor: 'pointer', color: 'var(--text-secondary)' }} onClick={() => setTags(tags.filter(t => t !== tag))} />
+              </span>
+            ))}
+            {tags.length === 0 && <span style={{fontSize: '0.75rem', color: 'var(--text-secondary)'}}>No tags attached.</span>}
+          </div>
+          <input 
+            type="text" 
+            value={newTagInput} 
+            onChange={(e) => setNewTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newTagInput.trim()) {
+                e.preventDefault();
+                const processed = newTagInput.trim().toLowerCase();
+                if (!tags.includes(processed)) setTags([...tags, processed]);
+                setNewTagInput('');
+              }
+            }}
+            style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, cursor: 'text', fontFamily: 'inherit', fontSize: '0.85rem' }}
+            placeholder="Type a custom tag and hit Enter..."
+          />
         </div>
 
         <div style={{ marginBottom: 20 }}>

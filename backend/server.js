@@ -46,12 +46,16 @@ app.get('/api/files', async (req, res) => {
     const translatedSet = new Set(dbCalls ? dbCalls.map(c => c.filename) : []);
 
     // Fetch arbitrary string attachments linked exclusively to physical binaries
-    const { data: dbMeta, error: metaErr } = await supabase.from('file_metadata').select('filename, notes');
+    const { data: dbMeta, error: metaErr } = await supabase.from('file_metadata').select('filename, notes, tags');
     if (metaErr) console.error("Supabase Metadata Table Miss:", metaErr.message);
 
     const notesMap = new Map();
+    const tagsMap = new Map();
     if (dbMeta) {
-      dbMeta.forEach(m => notesMap.set(m.filename, m.notes));
+      dbMeta.forEach(m => {
+        notesMap.set(m.filename, m.notes);
+        tagsMap.set(m.filename, m.tags || []);
+      });
     }
 
     const files = fs.readdirSync(ARCHIVE_PATH)
@@ -61,6 +65,7 @@ app.get('/api/files', async (req, res) => {
         filename: f,
         translated: translatedSet.has(f),
         notes: notesMap.get(f) || null,
+        tags: tagsMap.get(f) || [],
         path: path.join(ARCHIVE_PATH, f)
       }));
     
@@ -74,7 +79,7 @@ app.get('/api/files', async (req, res) => {
 // PUT /api/files/metadata - Rename strings natively mapped through Samba and cascade to Supabase tables
 app.put('/api/files/metadata', async (req, res) => {
   try {
-    const { oldFilename, newFilename, notes } = req.body;
+    const { oldFilename, newFilename, notes, tags } = req.body;
     if (!oldFilename || !newFilename) return res.status(400).json({ error: 'Missing core mapping nomenclature keys' });
 
     // Step 1: Physically rename mapped entity natively inside Docker if it legally changed
@@ -118,9 +123,11 @@ app.put('/api/files/metadata', async (req, res) => {
     }
 
     // Step 4: Structurally bind Notes array mappings via direct upsert natively
+    // We strictly use the provided tags array if it exists to allow Native React deletion flows
     const { error: upsertErr } = await supabase.from('file_metadata').upsert({
       filename: newFilename,
-      notes: JSON.stringify(existingNotesArray)
+      notes: JSON.stringify(existingNotesArray),
+      tags: tags
     });
     if (upsertErr) throw new Error(upsertErr.message);
 

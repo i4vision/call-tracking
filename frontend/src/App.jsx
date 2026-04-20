@@ -20,6 +20,7 @@ function AppContent() {
   const [editingFile, setEditingFile] = useState(null);
   const fileInputRef = useRef(null);
   const [playingFile, setPlayingFile] = useState(null);
+  const [selectedTagFilter, setSelectedTagFilter] = useState('');
   const audioRef = useRef(null);
   const navigate = useNavigate();
 
@@ -117,6 +118,11 @@ function AppContent() {
     }
   };
 
+  const uniqueTags = Array.from(new Set(files.flatMap(f => f.tags || []))).sort();
+  const filteredFiles = selectedTagFilter 
+    ? files.filter(f => (f.tags || []).includes(selectedTagFilter))
+    : files;
+
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -146,10 +152,21 @@ function AppContent() {
         </div>
         
         <div className="file-list">
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 12}}>
-            <h3 style={{fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '10px 12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
-              Recordings ({files.length})
+          <div style={{display: 'flex', alignItems: 'center', paddingRight: 12}}>
+            <h3 style={{fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '10px 0 10px 12px', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0}}>
+              Recordings ({filteredFiles.length})
             </h3>
+            {uniqueTags.length > 0 && (
+              <select 
+                value={selectedTagFilter} 
+                onChange={e => setSelectedTagFilter(e.target.value)}
+                style={{ background: 'var(--bg-color-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, padding: '2px 4px', fontSize: '0.75rem', marginLeft: 8, maxWidth: 100 }}
+              >
+                <option value="">All Tags</option>
+                {uniqueTags.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            )}
+            <div style={{ flex: 1 }}></div>
             <button 
               onClick={() => fileInputRef.current?.click()}
               style={{background: 'transparent', border: 'none', color: isUploading ? 'var(--accent-color)' : 'var(--text-secondary)', cursor: 'pointer', transition: 'color 0.2s', display: 'flex', alignItems: 'center'}}
@@ -161,10 +178,10 @@ function AppContent() {
           </div>
           {loading ? (
             <div style={{padding: 12, color: 'var(--text-secondary)'}}>Loading...</div>
-          ) : files.length === 0 ? (
-            <div style={{padding: 12, color: 'var(--text-secondary)'}}>No .mp3 files found.</div>
+          ) : filteredFiles.length === 0 ? (
+            <div style={{padding: 12, color: 'var(--text-secondary)'}}>No matching .mp3 files found.</div>
           ) : (
-            files.map((file) => (
+            filteredFiles.map((file) => (
               <div 
                 key={file.id} 
                 className="file-item"
