@@ -216,24 +216,35 @@ const transcribeWithWhisper = async (filePath, key, provider, prompt) => {
 };
 
 const transcribeWithGoogle = async (filePath, key, prompt) => {
-  try {
-    const audioData = fs.readFileSync(filePath).toString("base64");
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-    const payload = {
-      contents: [{
-        parts: [
-          { inline_data: { mime_type: "audio/mp3", data: audioData } },
-          { text: prompt || "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else." }
-        ]
-      }]
-    };
-    const response = await axios.post(url, payload, { headers: { 'Content-Type': 'application/json' } });
-    const text = response.data.candidates[0].content.parts[0].text;
-    return { text };
-  } catch (error) {
-    console.error("Google Gemini Transcription Error:", error.response ? JSON.stringify(error.response.data) : error.message);
-    const msg = error.response?.data?.error?.message || error.message;
-    throw new Error(`Google API Fault: ${msg}`);
+  const audioData = fs.readFileSync(filePath).toString("base64");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const payload = {
+    contents: [{
+      parts: [
+        { inline_data: { mime_type: "audio/mp3", data: audioData } },
+        { text: prompt || "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else." }
+      ]
+    }]
+  };
+
+  let maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.post(url, payload, { headers: { 'Content-Type': 'application/json' } });
+      const text = response.data.candidates[0].content.parts[0].text;
+      return { text };
+    } catch (error) {
+      const msg = error.response?.data?.error?.message || error.message;
+      const isDemandSpike = msg.toLowerCase().includes('demand') || msg.includes('503') || error.response?.status === 503;
+      
+      if (attempt === maxRetries || !isDemandSpike) {
+        console.error("Google Gemini Transcription Error:", error.response ? JSON.stringify(error.response.data) : error.message);
+        throw new Error(`Google API Fault: ${msg}`);
+      }
+      
+      console.warn(`Capacity fault (attempt ${attempt}/${maxRetries}). Backing off gracefully...`);
+      await new Promise(r => setTimeout(r, attempt * 3000));
+    }
   }
 };
 
@@ -284,21 +295,36 @@ const analyzeEmotionAnthropic = async (transcript, model, apiKey, systemPrompt) 
 };
 
 const analyzeEmotionGoogle = async (transcript, model, apiKey, systemPrompt) => {
-  const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const payload = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [
       { role: 'user', parts: [{ text: `Analyze the sentiment of this call transcript: "${transcript}"` }] }
     ],
     generationConfig: { temperature: 0 }
-  }, {
-    headers: { 'Content-Type': 'application/json' }
-  });
-  
-  return {
-    emotion: response.data.candidates[0].content.parts[0].text.trim().toLowerCase(),
-    input_tokens: response.data.usageMetadata?.promptTokenCount || (transcript.length/4),
-    output_tokens: response.data.usageMetadata?.candidatesTokenCount || 1
   };
+
+  let maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.post(url, payload, { headers: { 'Content-Type': 'application/json' } });
+      
+      return {
+        emotion: response.data.candidates[0].content.parts[0].text.trim().toLowerCase(),
+        input_tokens: response.data.usageMetadata?.promptTokenCount || (transcript.length/4),
+        output_tokens: response.data.usageMetadata?.candidatesTokenCount || 1
+      };
+    } catch (error) {
+      const msg = error.response?.data?.error?.message || error.message;
+      const isDemandSpike = msg.toLowerCase().includes('demand') || msg.includes('503') || error.response?.status === 503;
+      
+      if (attempt === maxRetries || !isDemandSpike) {
+        throw new Error(`Google API Analysis Fault: ${msg}`);
+      }
+      console.warn(`Analysis capacity fault (attempt ${attempt}/${maxRetries}). Backing off...`);
+      await new Promise(r => setTimeout(r, attempt * 2000));
+    }
+  }
 };
 
 // Standard fallback flat rates for missing pricing
