@@ -218,7 +218,7 @@ const transcribeWithWhisper = async (filePath, key, provider, prompt) => {
 const transcribeWithGoogle = async (filePath, key, prompt) => {
   try {
     const audioData = fs.readFileSync(filePath).toString("base64");
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`;
     const payload = {
       contents: [{
         parts: [

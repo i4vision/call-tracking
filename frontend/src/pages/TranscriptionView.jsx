@@ -14,8 +14,8 @@ const ANALYZER_OPTIONS = {
     { value: 'claude-3-haiku', label: 'Claude 3 Haiku' }
   ],
   google: [
-    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' }
+    { value: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro' },
+    { value: 'gemini-1.5-flash-latest', label: 'Gemini 1.5 Flash' }
   ],
   groq: [
     { value: 'llama3-70b-8192', label: 'Llama 3 (70B)' },
