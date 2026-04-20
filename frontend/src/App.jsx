@@ -21,6 +21,7 @@ function AppContent() {
   const fileInputRef = useRef(null);
   const [playingFile, setPlayingFile] = useState(null);
   const [selectedTagFilter, setSelectedTagFilter] = useState('');
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const audioRef = useRef(null);
   const navigate = useNavigate();
 
@@ -157,14 +158,67 @@ function AppContent() {
               Recordings ({filteredFiles.length})
             </h3>
             {uniqueTags.length > 0 && (
-              <select 
-                value={selectedTagFilter} 
-                onChange={e => setSelectedTagFilter(e.target.value)}
-                style={{ background: 'var(--bg-color-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, padding: '2px 4px', fontSize: '0.75rem', marginLeft: 8, maxWidth: 100 }}
-              >
-                <option value="">All Tags</option>
-                {uniqueTags.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <div style={{ position: 'relative', marginLeft: 8 }}>
+                <button
+                  onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                  onBlur={() => setTimeout(() => setIsFilterDropdownOpen(false), 200)}
+                  style={{
+                    background: 'var(--bg-color-tertiary)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    borderRadius: 4,
+                    padding: '4px 8px',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                  title="Filter by Tag"
+                >
+                  {selectedTagFilter || 'All Tags'} <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>▼</span>
+                </button>
+                
+                {isFilterDropdownOpen && (
+                  <ul style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: 4,
+                    background: 'var(--bg-color)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 6,
+                    padding: 0,
+                    margin: '4px 0 0 0',
+                    listStyle: 'none',
+                    zIndex: 20,
+                    minWidth: 120,
+                    maxHeight: 200,
+                    overflowY: 'auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                  }}>
+                    <li 
+                      onClick={() => { setSelectedTagFilter(''); setIsFilterDropdownOpen(false); }}
+                      style={{ padding: '8px 12px', fontSize: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', color: !selectedTagFilter ? 'var(--accent-color)' : 'var(--text-primary)' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-color-tertiary)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      All Tags
+                    </li>
+                    {uniqueTags.map(t => (
+                      <li 
+                        key={t}
+                        onClick={() => { setSelectedTagFilter(t); setIsFilterDropdownOpen(false); }}
+                        style={{ padding: '8px 12px', fontSize: '0.75rem', cursor: 'pointer', color: selectedTagFilter === t ? 'var(--accent-color)' : 'var(--text-primary)', wordBreak: 'break-word' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-color-tertiary)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
             <div style={{ flex: 1 }}></div>
             <button 
