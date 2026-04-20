@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { Mic, BarChart2, Headphones, Play, Pause, Settings, UploadCloud } from 'lucide-react';
+import { Mic, BarChart2, Headphones, Play, Pause, Settings, UploadCloud, Edit2 } from 'lucide-react';
 import TranscriptionView from './pages/TranscriptionView';
 import DashboardView from './pages/DashboardView';
 import SettingsModal from './components/SettingsModal';
 import FileHistoryModal from './components/FileHistoryModal';
+import EditMetadataModal from './components/EditMetadataModal';
 import './index.css';
 
 export const API_URL = '/api';
@@ -16,6 +17,7 @@ function AppContent() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewingHistoryFile, setViewingHistoryFile] = useState(null);
+  const [editingFile, setEditingFile] = useState(null);
   const fileInputRef = useRef(null);
   const [playingFile, setPlayingFile] = useState(null);
   const audioRef = useRef(null);
@@ -159,8 +161,17 @@ function AppContent() {
                   >
                     {playingFile === file.filename ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
                   </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setEditingFile(file); }} 
+                    style={{background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', transition: 'color 0.2s'}}
+                    title="Edit Audio Mapping"
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-color)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                  >
+                    <Edit2 size={16} />
+                  </button>
                   <span className="file-name" title={file.filename} style={{color: file.translated ? 'var(--success-color)' : 'var(--text-secondary)'}}>
-                    {file.filename}
+                    {file.filename} {file.notes && <span style={{fontSize: '0.65rem', padding: '0 4px', background: 'rgba(255,255,255,0.1)', borderRadius: 3, verticalAlign: 'middle', marginLeft: 4}}>📝</span>}
                   </span>
               </div>
             ))
@@ -176,6 +187,13 @@ function AppContent() {
       </main>
       
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+      {editingFile && (
+        <EditMetadataModal 
+          file={editingFile} 
+          onClose={() => setEditingFile(null)} 
+          onSaved={fetchFiles} 
+        />
+      )}
       {viewingHistoryFile && (
         <FileHistoryModal 
           filename={viewingHistoryFile} 

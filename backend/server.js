@@ -45,12 +45,20 @@ app.get('/api/files', async (req, res) => {
     const { data: dbCalls } = await supabase.from('calls').select('filename');
     const translatedSet = new Set(dbCalls ? dbCalls.map(c => c.filename) : []);
 
+    // Fetch arbitrary string attachments linked exclusively to physical binaries
+    const { data: dbMeta } = await supabase.from('file_metadata').select('filename, notes');
+    const notesMap = new Map();
+    if (dbMeta) {
+      dbMeta.forEach(m => notesMap.set(m.filename, m.notes));
+    }
+
     const files = fs.readdirSync(ARCHIVE_PATH)
       .filter(f => f.toLowerCase().endsWith('.mp3'))
       .map((f, i) => ({
         id: `file-${i}`,
         filename: f,
         translated: translatedSet.has(f),
+        notes: notesMap.get(f) || null,
         path: path.join(ARCHIVE_PATH, f)
       }));
     
@@ -58,6 +66,42 @@ app.get('/api/files', async (req, res) => {
   } catch (error) {
     console.error('Error reading files:', error);
     res.status(500).json({ error: 'Failed to read archive folder', files: [] });
+  }
+});
+
+// PUT /api/files/metadata - Rename strings natively mapped through Samba and cascade to Supabase tables
+app.put('/api/files/metadata', async (req, res) => {
+  try {
+    const { oldFilename, newFilename, notes } = req.body;
+    if (!oldFilename || !newFilename) return res.status(400).json({ error: 'Missing core mapping nomenclature keys' });
+
+    // Step 1: Physically rename mapped entity natively inside Docker if it legally changed
+    if (oldFilename !== newFilename) {
+      const oldPath = path.join(ARCHIVE_PATH, oldFilename);
+      const newPath = path.join(ARCHIVE_PATH, newFilename);
+
+      if (!fs.existsSync(oldPath)) return res.status(404).json({ error: 'Source physical object natively absent' });
+      if (fs.existsSync(newPath)) return res.status(400).json({ error: 'Target nomenclature inherently clashes with existing physical mapping' });
+
+      fs.renameSync(oldPath, newPath);
+
+      // Step 2: Cascade update seamlessly into transcription records matrix backwards inherently
+      await supabase.from('calls').update({ filename: newFilename }).eq('filename', oldFilename);
+      
+      // Step 3: Delete exact historical tracker since PK structure changes
+      await supabase.from('file_metadata').delete().eq('filename', oldFilename);
+    }
+
+    // Step 4: Structurally bind Notes array mappings via direct upsert natively
+    await supabase.from('file_metadata').upsert({
+      filename: newFilename,
+      notes: notes || ''
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Metadata Editor Structural Exception:', err);
+    res.status(500).json({ error: 'Cascading editor failed execution loop', details: err.message });
   }
 });
 
