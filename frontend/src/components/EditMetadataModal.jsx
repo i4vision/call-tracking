@@ -4,14 +4,20 @@ import { API_URL } from '../App';
 
 export default function EditMetadataModal({ file, onClose, onSaved }) {
   const [newFilename, setNewFilename] = useState('');
-  const [notes, setNotes] = useState('');
+  const [newNote, setNewNote] = useState('');
+  const [historyNotes, setHistoryNotes] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (file) {
       setNewFilename(file.filename.replace('.mp3', ''));
-      setNotes(file.notes || '');
+      try {
+         setHistoryNotes(file.notes ? JSON.parse(file.notes) : []);
+      } catch(e) {
+         setHistoryNotes(file.notes ? [{ id: 'legacy', date: new Date().toISOString(), text: file.notes }] : []);
+      }
+      setNewNote('');
     }
   }, [file]);
 
@@ -30,7 +36,7 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
         body: JSON.stringify({
           oldFilename: file.filename,
           newFilename: constructedName,
-          notes: notes
+          notes: newNote
         })
       });
 
@@ -77,12 +83,34 @@ export default function EditMetadataModal({ file, onClose, onSaved }) {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 5 }}>Annotations / Notes</label>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 10 }}>Annotation History</label>
+          
+          <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: 15, paddingRight: 5 }}>
+            {historyNotes.length === 0 ? (
+               <div style={{ padding: '15px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 4, color: 'var(--text-secondary)', fontSize: '0.85rem', border: '1px dashed var(--border-color)' }}>
+                 No historical mapping logs attached.
+               </div>
+            ) : (
+               historyNotes.map((note) => (
+                 <div key={note.id || note.date} style={{ padding: '12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: 6, marginBottom: 8 }}>
+                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+                     <span>Logged explicitly on</span>
+                     <span>{new Date(note.date).toLocaleString()}</span>
+                   </div>
+                   <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
+                     {note.text}
+                   </div>
+                 </div>
+               ))
+            )}
+          </div>
+
+          <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 5 }}>Add New Note (Optional)</label>
           <textarea 
-            value={notes} 
-            onChange={(e) => setNotes(e.target.value)}
-            style={{ width: '100%', minHeight: '120px', padding: '10px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, resize: 'vertical', fontFamily: 'inherit' }}
-            placeholder="Add specific context, customer flags, or behavioral markers here..."
+            value={newNote} 
+            onChange={(e) => setNewNote(e.target.value)}
+            style={{ width: '100%', minHeight: '80px', padding: '10px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, resize: 'vertical', fontFamily: 'inherit' }}
+            placeholder="Write a new annotation strictly mapping to this physical audio track..."
           />
         </div>
 

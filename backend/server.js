@@ -78,6 +78,19 @@ app.put('/api/files/metadata', async (req, res) => {
     if (!oldFilename || !newFilename) return res.status(400).json({ error: 'Missing core mapping nomenclature keys' });
 
     // Step 1: Physically rename mapped entity natively inside Docker if it legally changed
+    let existingNotesArray = [];
+    
+    // Fetch exact historical notes payload before mutating
+    const { data: existMeta } = await supabase.from('file_metadata').select('notes').eq('filename', oldFilename).maybeSingle();
+    if (existMeta && existMeta.notes) {
+      try {
+         existingNotesArray = JSON.parse(existMeta.notes);
+      } catch(e) {
+         // Legacy fallback
+         existingNotesArray = [{ date: new Date().toISOString(), text: existMeta.notes }];
+      }
+    }
+
     if (oldFilename !== newFilename) {
       const oldPath = path.join(ARCHIVE_PATH, oldFilename);
       const newPath = path.join(ARCHIVE_PATH, newFilename);
@@ -96,10 +109,18 @@ app.put('/api/files/metadata', async (req, res) => {
       if (delErr) throw new Error(delErr.message);
     }
 
+    if (notes && notes.trim()) {
+      existingNotesArray.unshift({
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        text: notes.trim()
+      });
+    }
+
     // Step 4: Structurally bind Notes array mappings via direct upsert natively
     const { error: upsertErr } = await supabase.from('file_metadata').upsert({
       filename: newFilename,
-      notes: notes || ''
+      notes: JSON.stringify(existingNotesArray)
     });
     if (upsertErr) throw new Error(upsertErr.message);
 
