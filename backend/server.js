@@ -357,7 +357,7 @@ app.post('/api/system-prompt', async (req, res) => {
 
 // POST /api/transcribe
 app.post('/api/transcribe', async (req, res) => {
-  const { files, transcriberProvider, analyzerProvider, analyzerVersion, customPrompt } = req.body;
+  const { files, transcriberProvider, analyzerProvider, analyzerVersion, customPrompt, customTranscribePrompt: userTranscribeOverride } = req.body;
   if (!files || !Array.isArray(files) || files.length === 0) return res.status(400).json({ error: 'No files provided for transcription' });
   if (!transcriberProvider || !analyzerProvider || !analyzerVersion) return res.status(400).json({ error: 'Missing AI providers or versions' });
 
@@ -374,7 +374,9 @@ app.post('/api/transcribe', async (req, res) => {
   if (!analyzerKey) return res.status(403).json({ error: `Missing API Key for Analyzer: ${analyzerProvider}` });
 
   const dbTranscribePrompt = creds.find(c => c.provider === 'transcribe_prompt')?.api_key;
-  const customTranscribePrompt = dbTranscribePrompt || "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else.";
+  const customTranscribePrompt = (userTranscribeOverride && userTranscribeOverride.trim().length > 0) 
+    ? userTranscribeOverride 
+    : (dbTranscribePrompt || "Generate a highly accurate, word-for-word transcript of this audio strictly. Do not summarize. Just output the clean transcript. Nothing else.");
 
   const results = [];
 

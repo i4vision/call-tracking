@@ -37,6 +37,7 @@ export default function TranscriptionView({ selectedFiles }) {
   const [analyzerProvider, setAnalyzerProvider] = useState('openai');
   const [analyzerVersion, setAnalyzerVersion] = useState(ANALYZER_OPTIONS['openai'][0].value);
   const [customPrompt, setCustomPrompt] = useState('You are an AI tasked with emotional analysis. Respond with EXACTLY ONE WORD from this list based on the transcript: DELIGHTED, SATISFIED, NEUTRAL, CONFUSED, FRUSTRATED, ANGRY, URGENT. Do not include any punctuation or extra words.');
+  const [customTranscribePrompt, setCustomTranscribePrompt] = useState('');
   const [transcribing, setTranscribing] = useState(false);
   const [results, setResults] = useState([]);
 
@@ -45,6 +46,7 @@ export default function TranscriptionView({ selectedFiles }) {
       .then(res => res.json())
       .then(data => {
         if (data.prompt) setCustomPrompt(data.prompt);
+        if (data.transcribePrompt) setCustomTranscribePrompt(data.transcribePrompt);
       })
       .catch(err => console.error(err));
   }, []);
@@ -68,7 +70,8 @@ export default function TranscriptionView({ selectedFiles }) {
           transcriberProvider,
           analyzerProvider,
           analyzerVersion,
-          customPrompt
+          customPrompt,
+          customTranscribePrompt
         })
       });
       const data = await response.json();
@@ -130,6 +133,16 @@ export default function TranscriptionView({ selectedFiles }) {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+        </div>
+
+        <div className="select-group" style={{flexBasis: '100%', marginTop: 10}}>
+          <label>Transcription Output Formatting Prompt</label>
+          <textarea 
+            className="ai-prompt-textarea"
+            style={{minHeight: 70}}
+            value={customTranscribePrompt} 
+            onChange={e => setCustomTranscribePrompt(e.target.value)}
+          />
         </div>
 
         <div className="select-group" style={{flexBasis: '100%', marginTop: 10}}>
